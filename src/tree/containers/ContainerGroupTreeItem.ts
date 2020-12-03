@@ -5,17 +5,18 @@
 
 import { TreeItem, TreeItemCollapsibleState } from "vscode";
 import { AzExtTreeItem } from "vscode-azureextensionui";
+import { DockerContainer } from "../../docker/Containers";
 import { getThemedIconPath, IconPath } from "../IconPath";
 import { getImageGroupIcon } from "../images/ImageProperties";
 import { LocalGroupTreeItemBase } from "../LocalGroupTreeItemBase";
 import { LocalRootTreeItemBase } from "../LocalRootTreeItemBase";
 import { ContainerProperty, getContainerStateIcon } from "./ContainerProperties";
-import { DockerContainerInfo, NonComposeGroupName } from "./ContainersTreeItem";
+import { NonComposeGroupName } from "./ContainersTreeItem";
 
-export class ContainerGroupTreeItem extends LocalGroupTreeItemBase<DockerContainerInfo, ContainerProperty> {
+export class ContainerGroupTreeItem extends LocalGroupTreeItemBase<DockerContainer, ContainerProperty> {
     public childTypeLabel: string = 'container';
 
-    public constructor(parent: LocalRootTreeItemBase<DockerContainerInfo, ContainerProperty>, group: string, items: DockerContainerInfo[]) {
+    public constructor(parent: LocalRootTreeItemBase<DockerContainer, ContainerProperty>, group: string, items: DockerContainer[]) {
         super(parent, group, items);
 
         if (this.parent.groupBySetting === 'Compose Project Name') {
