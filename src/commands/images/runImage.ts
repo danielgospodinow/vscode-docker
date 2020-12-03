@@ -36,5 +36,5 @@ async function runImageCore(context: IActionContext, node: ImageTreeItem | undef
         inspectInfo?.Config?.ExposedPorts
     );
 
-    await executeAsTask(context, terminalCommand, node.fullTag, { addDockerEnv: true, alwaysRunNew: interactive });
+    await executeAsTask(context, terminalCommand, node.fullTag, { addDockerEnv: true });
 }
