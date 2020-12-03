@@ -3,14 +3,11 @@
  *  Licensed under the MIT License. See LICENSE.md in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import * as dayjs from 'dayjs';
-import * as relativeTime from 'dayjs/plugin/relativeTime';
+import * as moment from 'moment';
 import { DockerObject } from '../../docker/Common';
 import { localize } from '../../localize';
 import { getThemedIconPath, IconPath } from '../IconPath';
 import { ITreePropertyInfo } from './ITreeSettingInfo';
-
-dayjs.extend(relativeTime);
 
 export type CommonProperty = 'CreatedTime' | 'Size';
 export type CommonGroupBy = 'None';
@@ -33,7 +30,7 @@ export const sortByProperties: ITreePropertyInfo<CommonSortBy>[] = [
 export function getCommonPropertyValue(item: DockerObject, property: CommonProperty): string {
     switch (property) {
         case 'CreatedTime':
-            return dayjs(item.CreatedTime).fromNow();
+            return moment(new Date(item.CreatedTime)).fromNow();
         case 'Size':
             // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/tslint/config
             const size: number = (item as any).Size ?? 0;

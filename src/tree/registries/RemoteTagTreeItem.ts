@@ -3,14 +3,11 @@
  *  Licensed under the MIT License. See LICENSE.md in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import * as dayjs from 'dayjs';
-import * as relativeTime from 'dayjs/plugin/relativeTime';
+import * as moment from 'moment';
 import { AzExtTreeItemIntermediate } from '../AzExtTreeItemIntermediate';
 import { getThemedIconPath, IconPath } from '../IconPath';
 import { getRegistryContextValue, tagSuffix } from './registryContextValues';
 import { RemoteRepositoryTreeItemBase } from './RemoteRepositoryTreeItemBase';
-
-dayjs.extend(relativeTime);
 
 export class RemoteTagTreeItem extends AzExtTreeItemIntermediate {
     public parent: RemoteRepositoryTreeItemBase;
@@ -45,7 +42,7 @@ export class RemoteTagTreeItem extends AzExtTreeItemIntermediate {
     }
 
     public get description(): string {
-        return dayjs(this.time).fromNow();
+        return moment(this.time).fromNow();
     }
 
     public get iconPath(): IconPath {
