@@ -8,8 +8,8 @@ services:
   {{ serviceName }}:
     image: {{ serviceName }}
     build:
-      context: {{ workspaceRelative . dockerBuildContext }}
-      dockerfile: {{ contextRelative . dockerfileDirectory }}/Dockerfile
+      context: .
+      dockerfile: {{ dirname (workspaceRelative . artifact) 'Linux' }}/Dockerfile
 {{#if ports}}
     ports:
 {{#each ports}}

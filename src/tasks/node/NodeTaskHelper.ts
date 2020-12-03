@@ -5,7 +5,6 @@
 
 import * as path from 'path';
 import { WorkspaceFolder } from 'vscode';
-import { NodeScaffoldingOptions } from '../../debugging/DockerDebugScaffoldingProvider';
 import { Lazy } from '../../utils/lazy';
 import { inferCommand, inferPackageName, InspectMode, NodePackage, readPackage } from '../../utils/nodeUtils';
 import { resolveVariables, unresolveWorkspaceFolder } from '../../utils/resolveVariables';
@@ -35,7 +34,7 @@ export interface NodeRunTaskDefinition extends DockerRunTaskDefinitionBase {
 }
 
 export class NodeTaskHelper implements TaskHelper {
-    public async provideDockerBuildTasks(context: DockerTaskScaffoldContext, options?: NodeScaffoldingOptions): Promise<DockerBuildTaskDefinition[]> {
+    public async provideDockerBuildTasks(context: DockerTaskScaffoldContext): Promise<DockerBuildTaskDefinition[]> {
         return [
             {
                 type: 'docker-build',
@@ -43,23 +42,21 @@ export class NodeTaskHelper implements TaskHelper {
                 platform: 'node',
                 dockerBuild: {
                     dockerfile: unresolveWorkspaceFolder(context.dockerfile, context.folder),
-                    context: unresolveWorkspaceFolder(path.dirname(context.dockerfile), context.folder),
+                    /* eslint-disable-next-line no-template-curly-in-string */
+                    context: '${workspaceFolder}',
                     pull: true
-                },
-                // If the package is at the root, we'll leave it out of the config for brevity, otherwise it must be specified explicitly
-                node: NodeTaskHelper.getNodeOptionsForScaffolding(options?.package, context.folder),
+                }
             }
         ];
     }
 
-    public async provideDockerRunTasks(context: DockerTaskScaffoldContext, options?: NodeScaffoldingOptions): Promise<DockerRunTaskDefinition[]> {
+    public async provideDockerRunTasks(context: DockerTaskScaffoldContext): Promise<DockerRunTaskDefinition[]> {
         return [
             {
                 type: 'docker-run',
                 label: 'docker-run: release',
                 dependsOn: ['docker-build'],
-                platform: 'node',
-                node: NodeTaskHelper.getNodeOptionsForScaffolding(options?.package, context.folder),
+                platform: 'node'
             },
             {
                 type: 'docker-run',
@@ -72,10 +69,8 @@ export class NodeTaskHelper implements TaskHelper {
                     }
                 },
                 node: {
-                    // If the package is at the root, we'll leave it out of the config for brevity, otherwise it must be specified explicitly
-                    ...NodeTaskHelper.getNodeOptionsForScaffolding(options?.package, context.folder),
                     enableDebugging: true
-                },
+                }
             }
         ];
     }
@@ -166,17 +161,6 @@ export class NodeTaskHelper implements TaskHelper {
         } else {
             return path.join(folder.uri.fsPath, 'package.json');
         }
-    }
-
-    public static getNodeOptionsForScaffolding(packagePath: string | undefined, folder: WorkspaceFolder): { package?: string } | undefined {
-        // If the package is at the root, we'll leave it out of the config for brevity, otherwise it must be specified explicitly
-        if (packagePath && path.dirname(packagePath).toLowerCase() !== folder.uri.fsPath.toLowerCase()) {
-            return {
-                package: unresolveWorkspaceFolder(packagePath, folder),
-            };
-        }
-
-        return undefined;
     }
 
     private static inferBuildContextPath(packagePath: string): string {

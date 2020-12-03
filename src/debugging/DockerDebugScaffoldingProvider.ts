@@ -20,11 +20,6 @@ import { nodeDebugHelper } from './node/NodeDebugHelper';
 import { pythonDebugHelper } from './python/PythonDebugHelper';
 
 export type NetCoreScaffoldingOptions = NetCoreDebugScaffoldingOptions | NetCoreTaskScaffoldingOptions;
-
-export interface NodeScaffoldingOptions {
-    package?: string;
-}
-
 export interface PythonScaffoldingOptions {
     projectType?: PythonProjectType;
     target?: PythonTarget;
@@ -32,7 +27,7 @@ export interface PythonScaffoldingOptions {
 
 export interface IDockerDebugScaffoldingProvider {
     initializeNetCoreForDebugging(context: DockerDebugScaffoldContext, options?: NetCoreScaffoldingOptions): Promise<void>;
-    initializeNodeForDebugging(context: DockerDebugScaffoldContext, options?: NodeScaffoldingOptions): Promise<void>;
+    initializeNodeForDebugging(context: DockerDebugScaffoldContext): Promise<void>;
     initializePythonForDebugging(context: DockerDebugScaffoldContext, options: PythonScaffoldingOptions): Promise<void>;
 }
 
@@ -47,13 +42,13 @@ export class DockerDebugScaffoldingProvider implements IDockerDebugScaffoldingPr
         /* eslint-enable @typescript-eslint/promise-function-async */
     }
 
-    public async initializeNodeForDebugging(context: DockerDebugScaffoldContext, options?: NodeScaffoldingOptions): Promise<void> {
+    public async initializeNodeForDebugging(context: DockerDebugScaffoldContext): Promise<void> {
         await this.initializeForDebugging(
             context,
             /* eslint-disable @typescript-eslint/promise-function-async */
-            () => nodeDebugHelper.provideDebugConfigurations(context, options),
-            () => nodeTaskHelper.provideDockerBuildTasks(context, options),
-            () => nodeTaskHelper.provideDockerRunTasks(context, options));
+            () => nodeDebugHelper.provideDebugConfigurations(context),
+            () => nodeTaskHelper.provideDockerBuildTasks(context),
+            () => nodeTaskHelper.provideDockerRunTasks(context));
         /* eslint-enable @typescript-eslint/promise-function-async */
     }
 
