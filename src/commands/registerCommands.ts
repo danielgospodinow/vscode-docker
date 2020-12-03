@@ -79,7 +79,7 @@ import { pruneVolumes } from "./volumes/pruneVolumes";
 import { removeVolume } from "./volumes/removeVolume";
 
 interface CommandReasonArgument {
-    commandReason: 'tree' | 'palette' | 'startPage' | 'install';
+    commandReason: 'tree' | 'palette' | 'startPage';
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -93,11 +93,7 @@ export function registerCommand(commandId: string, callback: (context: IActionCo
             // If a command reason is given, record it. Currently only the start page provides the reason.
             const commandReasonArgIndex = args.findIndex(a => (<CommandReasonArgument>a)?.commandReason);
             if (commandReasonArgIndex >= 0) {
-                const commandReason = (<CommandReasonArgument>args[commandReasonArgIndex]).commandReason;
-                context.telemetry.properties.commandReason = commandReason;
-                if (commandReason === 'install') {
-                    context.telemetry.properties.isActivationEvent = 'true';
-                }
+                context.telemetry.properties.commandReason = (<CommandReasonArgument>args[commandReasonArgIndex]).commandReason;
 
                 // Remove the reason argument from the list to prevent confusing the command
                 args.splice(commandReasonArgIndex, 1);
