@@ -9,6 +9,7 @@ import { IActionContext, IAzureQuickPickOptions } from 'vscode-azureextensionui'
 import { extensionId } from '../constants';
 import { ext } from '../extensionVariables';
 import { localize } from '../localize';
+import { openExternal } from '../utils/openExternal';
 
 interface HelpMenuItem extends vscode.QuickPickItem {
     handler(): Promise<void>,
@@ -31,12 +32,12 @@ export async function help(context: IActionContext): Promise<void> {
 
 async function getStarted(): Promise<void> {
     /* eslint-disable-next-line @typescript-eslint/no-floating-promises */
-    vscode.env.openExternal(vscode.Uri.parse('https://code.visualstudio.com/docs/containers/overview'));
+    openExternal("https://code.visualstudio.com/docs/containers/overview");
 }
 
 async function reviewIssues(): Promise<void> {
     /* eslint-disable-next-line @typescript-eslint/no-floating-promises */
-    vscode.env.openExternal(vscode.Uri.parse('https://github.com/microsoft/vscode-docker/issues'));
+    openExternal("https://github.com/microsoft/vscode-docker/issues");
 }
 
 async function reportIssue(): Promise<void> {

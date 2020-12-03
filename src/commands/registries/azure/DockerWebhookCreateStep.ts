@@ -5,6 +5,7 @@
 
 import { WebSiteManagementModels } from '@azure/arm-appservice';
 import { ContainerRegistryManagementModels as AcrModels } from '@azure/arm-containerregistry';
+import { Progress } from "vscode";
 import * as vscode from "vscode";
 import { IAppServiceWizardContext } from "vscode-azureappservice"; // These are only dev-time imports so don't need to be lazy
 import { AzureWizardExecuteStep, createAzureClient } from "vscode-azureextensionui";
@@ -16,6 +17,7 @@ import { DockerHubRepositoryTreeItem } from '../../../tree/registries/dockerHub/
 import { RemoteTagTreeItem } from '../../../tree/registries/RemoteTagTreeItem';
 import { cryptoUtils } from '../../../utils/cryptoUtils';
 import { nonNullProp } from "../../../utils/nonNull";
+import { openExternal } from '../../../utils/openExternal';
 
 export class DockerWebhookCreateStep extends AzureWizardExecuteStep<IAppServiceWizardContext> {
     public priority: number = 141; // execute after DockerSiteCreate
@@ -25,7 +27,7 @@ export class DockerWebhookCreateStep extends AzureWizardExecuteStep<IAppServiceW
         this._treeItem = treeItem;
     }
 
-    public async execute(context: IAppServiceWizardContext, progress: vscode.Progress<{
+    public async execute(context: IAppServiceWizardContext, progress: Progress<{
         message?: string;
         increment?: number;
     }>): Promise<void> {
@@ -56,8 +58,11 @@ export class DockerWebhookCreateStep extends AzureWizardExecuteStep<IAppServiceW
                 .showInformationMessage(localize('vscode-docker.commands.registries.azure.dockerWebhook.cicd', 'To set up a CI/CD webhook, open the page "{0}" and enter the URI to the created web app in your dockerhub account', dockerhubUri), dockerhubPrompt)
                 .then(response => {
                     if (response) {
-                        void vscode.env.clipboard.writeText(appUri);
-                        void vscode.env.openExternal(vscode.Uri.parse(dockerhubUri));
+                        /* eslint-disable-next-line @typescript-eslint/no-floating-promises */
+                        vscode.env.clipboard.writeText(appUri);
+
+                        /* eslint-disable-next-line @typescript-eslint/no-floating-promises */
+                        openExternal(dockerhubUri);
                     }
                 });
         }

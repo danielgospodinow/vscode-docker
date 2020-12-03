@@ -11,7 +11,6 @@ import { AzureUserInput, callWithTelemetryAndErrorHandling, createAzExtOutputCha
 import { ConfigurationParams, DidChangeConfigurationNotification, DocumentSelector, LanguageClient, LanguageClientOptions, Middleware, ServerOptions, TransportKind } from 'vscode-languageclient/lib/main';
 import * as tas from 'vscode-tas-client';
 import { registerCommands } from './commands/registerCommands';
-import { openStartPageAfterExtensionUpdate } from './commands/startPage/openStartPage';
 import { COMPOSE_FILE_GLOB_PATTERN, extensionVersion } from './constants';
 import { registerDebugProvider } from './debugging/DebugHelper';
 import { DockerContextManager } from './docker/ContextManager';
@@ -149,8 +148,6 @@ export async function activateInternal(ctx: vscode.ExtensionContext, perfStats: 
         activateLanguageClient(ctx);
 
         registerListeners();
-
-        void openStartPageAfterExtensionUpdate();
     });
 }
 
