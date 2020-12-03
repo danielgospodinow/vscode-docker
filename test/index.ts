@@ -15,7 +15,6 @@ export function run(): Promise<void> {
         ui: 'tdd',
         color: true,
         grep: process.env.MOCHA_grep,
-        timeout: 10000,
     });
 
     const testsRoot = path.resolve(__dirname, '.');
