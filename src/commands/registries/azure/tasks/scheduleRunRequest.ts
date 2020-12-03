@@ -3,7 +3,8 @@
  *  Licensed under the MIT License. See LICENSE.md in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import { ContainerRegistryManagementClient, ContainerRegistryManagementModels as AcrModels } from "@azure/arm-containerregistry"; // These are only dev-time imports so don't need to be lazy
+import { ContainerRegistryManagementClient, ContainerRegistryManagementModels as AcrModels } from "@azure/arm-containerregistry";
+import { BlobClient, BlockBlobClient } from "@azure/storage-blob";
 import * as fse from 'fs-extra';
 import * as os from 'os';
 import * as path from 'path';
@@ -50,7 +51,7 @@ export async function scheduleRunRequest(context: IActionContext, requestType: '
     // Prepare to run.
     ext.outputChannel.show();
 
-    const uploadedSourceLocation: string = await uploadSourceCode(await node.getClient(), node.registryName, node.resourceGroup, rootFolder, tarFilePath);
+    const uploadedSourceLocation: string = await uploadSourceCode(node.client, node.registryName, node.resourceGroup, rootFolder, tarFilePath);
     ext.outputChannel.appendLine(localize('vscode-docker.commands.registries.azure.tasks.uploaded', 'Uploaded source code to {0}', tarFilePath));
 
     let runRequest: AcrModels.DockerBuildRequest | AcrModels.FileTaskRunRequest;
@@ -75,7 +76,7 @@ export async function scheduleRunRequest(context: IActionContext, requestType: '
     // Schedule the run and Clean up.
     ext.outputChannel.appendLine(localize('vscode-docker.commands.registries.azure.tasks.setUp', 'Set up run request'));
 
-    const run = await (await node.getClient()).registries.scheduleRun(node.resourceGroup, node.registryName, runRequest);
+    const run = await node.client.registries.scheduleRun(node.resourceGroup, node.registryName, runRequest);
     ext.outputChannel.appendLine(localize('vscode-docker.commands.registries.azure.tasks.scheduledRun', 'Scheduled run {0}', run.runId));
 
     void streamLogs(node, run);
@@ -124,8 +125,7 @@ async function uploadSourceCode(client: ContainerRegistryManagementClient, regis
     let uploadUrl: string = sourceUploadLocation.uploadUrl;
     let relativePath: string = sourceUploadLocation.relativePath;
 
-    const storageBlob = await import('@azure/storage-blob');
-    const blobClient = new storageBlob.BlockBlobClient(uploadUrl);
+    const blobClient = new BlockBlobClient(uploadUrl);
     ext.outputChannel.appendLine(localize('vscode-docker.commands.registries.azure.tasks.creatingBlockBlob', '   Creating block blob'));
     await blobClient.uploadFile(tarFilePath);
 
@@ -135,10 +135,8 @@ async function uploadSourceCode(client: ContainerRegistryManagementClient, regis
 const blobCheckInterval = 1000;
 const maxBlobChecks = 30;
 async function streamLogs(node: AzureRegistryTreeItem, run: AcrModels.Run): Promise<void> {
-    const result = await (await node.getClient()).runs.getLogSasUrl(node.resourceGroup, node.registryName, run.runId);
-
-    const storageBlob = await import('@azure/storage-blob');
-    const blobClient = new storageBlob.BlobClient(nonNullProp(result, 'logLink'));
+    const result = await node.client.runs.getLogSasUrl(node.resourceGroup, node.registryName, run.runId);
+    const blobClient = new BlobClient(nonNullProp(result, 'logLink'));
 
     // Start streaming the response to the output channel
     let byteOffset = 0;

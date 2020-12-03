@@ -3,6 +3,7 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
+import { ContainerRegistryManagementClient } from '@azure/arm-containerregistry';
 import { Progress } from 'vscode';
 import { AzureWizardExecuteStep, createAzureClient } from 'vscode-azureextensionui';
 import { ext } from '../../../../extensionVariables';
@@ -16,8 +17,7 @@ export class AzureRegistryCreateStep extends AzureWizardExecuteStep<IAzureRegist
     public async execute(context: IAzureRegistryWizardContext, progress: Progress<{ message?: string; increment?: number }>): Promise<void> {
         const newRegistryName = nonNullProp(context, 'newRegistryName');
 
-        const armContainerRegistry = await import('@azure/arm-containerregistry');
-        const client = createAzureClient(context, armContainerRegistry.ContainerRegistryManagementClient);
+        const client = createAzureClient(context, ContainerRegistryManagementClient);
         const creating: string = localize('vscode-docker.tree.registries.azure.createWizard.creating', 'Creating registry "{0}"...', newRegistryName);
         ext.outputChannel.appendLine(creating);
         progress.report({ message: creating });

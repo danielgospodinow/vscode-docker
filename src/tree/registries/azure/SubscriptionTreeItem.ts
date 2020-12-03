@@ -32,8 +32,7 @@ export class SubscriptionTreeItem extends SubscriptionTreeItemBase implements IR
             this._nextLink = undefined;
         }
 
-        const armContainerRegistry = await import('@azure/arm-containerregistry');
-        const client: ContainerRegistryManagementClient = createAzureClient(this.root, armContainerRegistry.ContainerRegistryManagementClient);
+        const client: ContainerRegistryManagementClient = createAzureClient(this.root, ContainerRegistryManagementClient);
         let registryListResult: AcrModels.RegistryListResult = this._nextLink === undefined ?
             await client.registries.list() :
             await client.registries.listNext(this._nextLink);

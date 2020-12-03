@@ -53,9 +53,8 @@ export class AzureRegistryTreeItem extends DockerV2RegistryTreeItemBase {
         return this._registry.location;
     }
 
-    public async getClient(): Promise<ContainerRegistryManagementClient> {
-        const armContainerRegistry = await import('@azure/arm-containerregistry');
-        return createAzureClient(this.parent.root, armContainerRegistry.ContainerRegistryManagementClient);
+    public get client(): ContainerRegistryManagementClient {
+        return createAzureClient(this.parent.root, ContainerRegistryManagementClient);
     }
 
     public get label(): string {
@@ -101,12 +100,12 @@ export class AzureRegistryTreeItem extends DockerV2RegistryTreeItemBase {
     }
 
     public async deleteTreeItemImpl(): Promise<void> {
-        await (await this.getClient()).registries.deleteMethod(this.resourceGroup, this.registryName);
+        await this.client.registries.deleteMethod(this.resourceGroup, this.registryName);
     }
 
     public async tryGetAdminCredentials(): Promise<AcrModels.RegistryListCredentialsResult | undefined> {
         if (this._registry.adminUserEnabled) {
-            return await (await this.getClient()).registries.listCredentials(this.resourceGroup, this.registryName);
+            return await this.client.registries.listCredentials(this.resourceGroup, this.registryName);
         } else {
             return undefined;
         }

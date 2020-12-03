@@ -17,6 +17,8 @@ import { AsyncLazy } from '../utils/lazy';
 import { isWindows } from '../utils/osUtils';
 import { execAsync, spawnAsync } from '../utils/spawnAsync';
 import { DockerContext, DockerContextInspection, isNewContextType } from './Contexts';
+import { DockerodeApiClient } from './DockerodeApiClient/DockerodeApiClient';
+import { DockerServeClient } from './DockerServeClient/DockerServeClient';
 
 // CONSIDER
 // Any of the commands related to Docker context can take a very long time to execute (a minute or longer)
@@ -120,15 +122,11 @@ export class DockerContextManager implements ContextManager, Disposable {
                 // But that probably won't be true in the future, so define both as separate concepts now
                 await this.setVsCodeContext('vscode-docker:aciContext', true);
                 await this.setVsCodeContext('vscode-docker:newSdkContext', true);
-
-                const dsc = await import('./DockerServeClient/DockerServeClient');
-                ext.dockerClient = new dsc.DockerServeClient(currentContext);
+                ext.dockerClient = new DockerServeClient(currentContext);
             } else {
                 await this.setVsCodeContext('vscode-docker:aciContext', false);
                 await this.setVsCodeContext('vscode-docker:newSdkContext', false);
-
-                const dockerode = await import('./DockerodeApiClient/DockerodeApiClient');
-                ext.dockerClient = new dockerode.DockerodeApiClient(currentContext);
+                ext.dockerClient = new DockerodeApiClient(currentContext);
             }
 
             // This will refresh the tree
