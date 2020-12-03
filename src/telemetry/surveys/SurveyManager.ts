@@ -6,6 +6,7 @@
 import * as vscode from 'vscode';
 import { callWithTelemetryAndErrorHandling, IActionContext } from 'vscode-azureextensionui';
 import { ext } from '../../extensionVariables';
+import { localize } from '../../localize';
 import { awareness } from './awareness';
 
 // Currently-active surveys should be registered here
@@ -20,8 +21,9 @@ const slushTime = 3000;
 
 export interface Survey {
     id: string;
+    url: string;
     prompt: string;
-    buttons: Map<string, string | undefined>;
+    buttons?: string[];
     activationDelayMs: number;
     isEligible(): Promise<boolean>;
 }
@@ -72,33 +74,28 @@ export class SurveyManager {
                     context.telemetry.properties.isActivationEvent = 'true';
 
                     const response = await this.surveyPrompt(survey);
-                    context.telemetry.properties.surveyResponse = response ? 'true' : 'false';
-                    context.telemetry.properties.surveyChoice = response;
+                    context.telemetry.properties.surveyResponse = response.toString();
 
                     if (response) {
-                        await this.surveyOpen(response);
+                        await this.surveyOpen(survey);
                     }
                 });
             }
         } catch { } // Best effort
     }
 
-    private async surveyOpen(url: string): Promise<void> {
-        await vscode.env.openExternal(vscode.Uri.parse(`${url}?o=${encodeURIComponent(process.platform)}&m=${encodeURIComponent(vscode.env.machineId)}`));
+    private async surveyOpen(survey: Survey): Promise<void> {
+        await vscode.env.openExternal(vscode.Uri.parse(`${survey.url}?o=${encodeURIComponent(process.platform)}&m=${encodeURIComponent(vscode.env.machineId)}`));
     }
 
-    private async surveyPrompt(survey: Survey): Promise<string | undefined> {
+    private async surveyPrompt(survey: Survey): Promise<boolean> {
         await ext.context.globalState.update(`${surveyRespondedKeyPrefix}.${survey.id}`, true);
         await ext.context.globalState.update(lastToastedSessionKey, vscode.env.sessionId);
 
-        const buttons = Array.from(survey.buttons.keys());
+        const take = survey.buttons?.[0] || localize('vscode-docker.survey.nps.take', 'Take survey');
+        const never = survey.buttons?.[1] || localize('vscode-docker.survey.nps.never', 'Don\'t ask again');
+        const result = await vscode.window.showInformationMessage(survey.prompt, take, never);
 
-        const result = await vscode.window.showInformationMessage(survey.prompt, ...buttons);
-
-        if (result === undefined) {
-            return undefined;
-        }
-
-        return survey.buttons.get(result);
+        return result === take;
     }
 }
