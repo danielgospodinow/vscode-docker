@@ -7,7 +7,6 @@ import * as vscode from 'vscode';
 import { IActionContext } from 'vscode-azureextensionui';
 import { ext } from '../extensionVariables';
 import { localize } from "../localize";
-import { executeAsTask } from '../utils/executeAsTask';
 import { createFileItem, Item, quickPickDockerComposeFileItem } from '../utils/quickPickFile';
 import { quickPickWorkspaceFolder } from '../utils/quickPickWorkspaceFolder';
 import { selectComposeCommand } from './selectCommandTemplate';
@@ -31,10 +30,12 @@ async function compose(context: IActionContext, commands: ('up' | 'down')[], mes
         selectedItems = selectedItem ? [selectedItem] : [];
     }
 
+    const terminal: vscode.Terminal = ext.terminalProvider.createTerminal('Docker Compose');
     const configOptions: vscode.WorkspaceConfiguration = vscode.workspace.getConfiguration('docker');
     const build: boolean = configOptions.get('dockerComposeBuild', true);
     const detached: boolean = configOptions.get('dockerComposeDetached', true);
 
+    terminal.sendText(`cd "${folder.uri.fsPath}"`);
     for (const command of commands) {
         if (selectedItems.length === 0) {
             const terminalCommand = await selectComposeCommand(
@@ -45,7 +46,7 @@ async function compose(context: IActionContext, commands: ('up' | 'down')[], mes
                 detached,
                 build
             );
-            await executeAsTask(context, await rewriteCommandForNewCliIfNeeded(terminalCommand), 'Docker Compose', { addDockerEnv: true, workspaceFolder: folder });
+            terminal.sendText(await rewriteCommandForNewCliIfNeeded(terminalCommand));
         } else {
             for (const item of selectedItems) {
                 const terminalCommand = await selectComposeCommand(
@@ -56,9 +57,10 @@ async function compose(context: IActionContext, commands: ('up' | 'down')[], mes
                     detached,
                     build
                 );
-                await executeAsTask(context, await rewriteCommandForNewCliIfNeeded(terminalCommand), 'Docker Compose', { addDockerEnv: true, workspaceFolder: folder });
+                terminal.sendText(await rewriteCommandForNewCliIfNeeded(terminalCommand));
             }
         }
+        terminal.show();
     }
 }
 

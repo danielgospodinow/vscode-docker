@@ -7,7 +7,6 @@ import { IActionContext } from 'vscode-azureextensionui';
 import { ext } from '../../extensionVariables';
 import { localize } from '../../localize';
 import { ContainerTreeItem } from '../../tree/containers/ContainerTreeItem';
-import { executeAsTask } from '../../utils/executeAsTask';
 import { selectLogsCommand } from '../selectCommandTemplate';
 
 export async function viewContainerLogs(context: IActionContext, node?: ContainerTreeItem): Promise<void> {
@@ -26,5 +25,7 @@ export async function viewContainerLogs(context: IActionContext, node?: Containe
         node.containerId
     );
 
-    await executeAsTask(context, terminalCommand, node.fullTag, { addDockerEnv: true });
+    const terminal = ext.terminalProvider.createTerminal(node.fullTag);
+    terminal.sendText(terminalCommand);
+    terminal.show();
 }

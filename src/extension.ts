@@ -34,6 +34,7 @@ import { AzureAccountExtensionListener } from './utils/AzureAccountExtensionList
 import { cryptoUtils } from './utils/cryptoUtils';
 import { Keytar } from './utils/keytar';
 import { bufferToString } from './utils/spawnAsync';
+import { DefaultTerminalProvider } from './utils/TerminalProvider';
 
 export type KeyInfo = { [keyName: string]: string };
 
@@ -61,6 +62,10 @@ function initializeExtensionVariables(ctx: vscode.ExtensionContext): void {
 
     ext.outputChannel = createAzExtOutputChannel('Docker', ext.prefix);
     ctx.subscriptions.push(ext.outputChannel);
+
+    if (!ext.terminalProvider) {
+        ext.terminalProvider = new DefaultTerminalProvider();
+    }
 
     if (!ext.keytar) {
         ext.keytar = Keytar.tryCreate();
