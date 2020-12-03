@@ -15,7 +15,6 @@ import { LegacyDockerDebugConfigProvider } from './configureWorkspace/LegacyDock
 import { COMPOSE_FILE_GLOB_PATTERN } from './constants';
 import { registerDebugConfigurationProvider } from './debugging/coreclr/registerDebugConfigurationProvider';
 import { registerDebugProvider } from './debugging/DebugHelper';
-import { DockerContextManager } from './docker/ContextManager';
 import { DockerComposeCompletionItemProvider } from './dockerCompose/dockerComposeCompletionItemProvider';
 import { DockerComposeHoverProvider } from './dockerCompose/dockerComposeHoverProvider';
 import composeVersionKeys from './dockerCompose/dockerComposeKeyInfo';
@@ -32,6 +31,7 @@ import { SurveyManager } from './telemetry/surveys/SurveyManager';
 import { registerTrees } from './tree/registerTrees';
 import { AzureAccountExtensionListener } from './utils/AzureAccountExtensionListener';
 import { Keytar } from './utils/keytar';
+import { refreshDockerode } from './utils/refreshDockerode';
 import { bufferToString } from './utils/spawnAsync';
 import { DefaultTerminalProvider } from './utils/TerminalProvider';
 
@@ -120,9 +120,7 @@ export async function activateInternal(ctx: vscode.ExtensionContext, perfStats: 
             )
         );
 
-        ctx.subscriptions.push(ext.dockerContextManager = new DockerContextManager());
-        // At initialization we need to force a refresh since the filesystem watcher would have no reason to trigger
-        await ext.dockerContextManager.refresh();
+        await refreshDockerode();
 
         registerTrees();
         registerCommands();
@@ -224,14 +222,13 @@ namespace Configuration {
                     settings: null
                 });
 
-                // These settings will result in a need to change context that doesn't actually change the docker context
-                // So, force a manual refresh so the settings get picked up
+                // Refresh explorer if needed
                 if (e.affectsConfiguration('docker.host') ||
                     e.affectsConfiguration('docker.certPath') ||
                     e.affectsConfiguration('docker.tlsVerify') ||
                     e.affectsConfiguration('docker.machineName') ||
                     e.affectsConfiguration('docker.dockerodeOptions')) {
-                    await ext.dockerContextManager.refresh();
+                    await refreshDockerode();
                 }
             }
         ));

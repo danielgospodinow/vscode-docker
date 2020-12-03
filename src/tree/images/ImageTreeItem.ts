@@ -3,36 +3,37 @@
  *  Licensed under the MIT License. See LICENSE.md in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
+import { Image } from 'dockerode';
 import { AzExtParentTreeItem, AzExtTreeItem, IActionContext } from "vscode-azureextensionui";
-import { DockerImage } from '../../docker/Images';
 import { ext } from '../../extensionVariables';
+import { callDockerode, callDockerodeWithErrorHandling } from '../../utils/callDockerode';
 import { getThemedIconPath, IconPath } from '../IconPath';
-import { getTreeId } from "../LocalRootTreeItemBase";
+import { ILocalImageInfo } from './LocalImageInfo';
 
 export class ImageTreeItem extends AzExtTreeItem {
     public static contextValue: string = 'image';
     public contextValue: string = ImageTreeItem.contextValue;
-    private readonly _item: DockerImage;
+    private readonly _item: ILocalImageInfo;
 
-    public constructor(parent: AzExtParentTreeItem, itemInfo: DockerImage) {
+    public constructor(parent: AzExtParentTreeItem, itemInfo: ILocalImageInfo) {
         super(parent);
         this._item = itemInfo;
     }
 
     public get id(): string {
-        return getTreeId(this._item);
+        return this._item.treeId;
     }
 
     public get createdTime(): number {
-        return this._item.CreatedTime;
+        return this._item.createdTime;
     }
 
     public get imageId(): string {
-        return this._item.Id;
+        return this._item.imageId;
     }
 
     public get fullTag(): string {
-        return this._item.Name;
+        return this._item.fullTag;
     }
 
     public get label(): string {
@@ -55,15 +56,22 @@ export class ImageTreeItem extends AzExtTreeItem {
         return getThemedIconPath(icon);
     }
 
+    public async getImage(): Promise<Image> {
+        return callDockerode(() => ext.dockerode.getImage(this.imageId));
+    }
+
     public async deleteTreeItemImpl(context: IActionContext): Promise<void> {
-        let ref = this.fullTag;
+        let image: Image;
 
         // Dangling images are not shown in the explorer. However, an image can end up with <none> tag, if a new version of that particular tag is pulled.
-        if (ref.endsWith(':<none>') && this._item.RepoDigests?.length) {
+        if (this.fullTag.endsWith(':<none>') && this._item.repoDigests && this._item.repoDigests.length > 0) {
             // Image is tagged <none>. Need to delete by digest.
-            ref = this._item.RepoDigests[0];
+            image = await callDockerode(() => ext.dockerode.getImage(this._item.repoDigests[0]));
+        } else {
+            // Image is normal. Delete by name.
+            image = await callDockerode(() => ext.dockerode.getImage(this.fullTag));
         }
 
-        return ext.dockerClient.removeImage(context, ref);
+        await callDockerodeWithErrorHandling(async () => image.remove({ force: true }), context);
     }
 }

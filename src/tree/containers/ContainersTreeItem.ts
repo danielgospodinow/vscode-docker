@@ -3,27 +3,28 @@
  *  Licensed under the MIT License. See LICENSE.md in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import { AzExtParentTreeItem, AzExtTreeItem, IActionContext } from "vscode-azureextensionui";
-import { DockerContainer } from "../../docker/Containers";
+import { AzExtParentTreeItem, AzExtTreeItem } from "vscode-azureextensionui";
 import { ext } from "../../extensionVariables";
 import { localize } from '../../localize';
+import { callDockerodeAsync } from "../../utils/callDockerode";
 import { getThemedIconPath } from "../IconPath";
 import { getImagePropertyValue } from "../images/ImageProperties";
-import { LocalChildGroupType, LocalChildType, LocalRootTreeItemBase } from "../LocalRootTreeItemBase";
+import { ILocalItem, LocalChildGroupType, LocalChildType, LocalRootTreeItemBase } from "../LocalRootTreeItemBase";
 import { OpenUrlTreeItem } from "../OpenUrlTreeItem";
 import { CommonGroupBy, groupByNoneProperty } from "../settings/CommonProperties";
 import { ITreeArraySettingInfo, ITreeSettingInfo } from "../settings/ITreeSettingInfo";
 import { ContainerGroupTreeItem } from "./ContainerGroupTreeItem";
 import { containerProperties, ContainerProperty } from "./ContainerProperties";
 import { ContainerTreeItem } from "./ContainerTreeItem";
+import { ILocalContainerInfo, LocalContainerInfo, NonComposeGroupName } from "./LocalContainerInfo";
 
-export class ContainersTreeItem extends LocalRootTreeItemBase<DockerContainer, ContainerProperty> {
+export class ContainersTreeItem extends LocalRootTreeItemBase<ILocalContainerInfo, ContainerProperty> {
     public treePrefix: string = 'containers';
     public label: string = localize('vscode-docker.tree.containers.label', 'Containers');
     public configureExplorerTitle: string = localize('vscode-docker.tree.containers.configure', 'Configure containers explorer');
 
-    public childType: LocalChildType<DockerContainer> = ContainerTreeItem;
-    public childGroupType: LocalChildGroupType<DockerContainer, ContainerProperty> = ContainerGroupTreeItem;
+    public childType: LocalChildType<ILocalContainerInfo> = ContainerTreeItem;
+    public childGroupType: LocalChildGroupType<ILocalContainerInfo, ContainerProperty> = ContainerGroupTreeItem;
 
     private newContainerUser: boolean = false;
 
@@ -51,34 +52,38 @@ export class ContainersTreeItem extends LocalRootTreeItemBase<DockerContainer, C
         return this.groupBySetting === 'None' ? 'container' : 'container group';
     }
 
-    public async getItems(context: IActionContext): Promise<DockerContainer[]> {
-        const results = await ext.dockerClient.getContainers(context);
+    public async getItems(): Promise<ILocalContainerInfo[]> {
+        const options = {
+            "filters": {
+                "status": ["created", "restarting", "running", "paused", "exited", "dead"]
+            }
+        };
+
+        const items = await callDockerodeAsync(async () => ext.dockerode.listContainers(options)) || [];
+        const localItems = items.map(c => new LocalContainerInfo(c));
         // eslint-disable-next-line @typescript-eslint/no-floating-promises
-        this.updateNewContainerUser(results);
-        return results;
+        this.updateNewContainerUser(localItems);
+        return localItems;
     }
 
-    public getPropertyValue(item: DockerContainer, property: ContainerProperty): string {
-        const networks = item.NetworkSettings?.Networks?.length > 0 ? Object.keys(item.NetworkSettings.Networks) : ['<none>'];
-        const ports = item.Ports?.length > 0 ? item.Ports.map(p => p.PublicPort) : ['<none>'];
-
+    public getPropertyValue(item: ILocalContainerInfo, property: ContainerProperty): string {
         switch (property) {
             case 'ContainerId':
-                return item.Id.slice(0, 12);
+                return item.containerId.slice(0, 12);
             case 'ContainerName':
-                return item.Name;
+                return item.containerName;
             case 'Networks':
-                return networks.join(',');
+                return item.networks.length > 0 ? item.networks.join(',') : '<none>';
             case 'Ports':
-                return ports.join(',');
+                return item.ports.length > 0 ? item.ports.join(',') : '<none>';
             case 'State':
-                return item.State;
+                return item.state;
             case 'Status':
-                return item.Status;
+                return item.status;
             case 'Compose Project Name':
-                return getComposeProjectName(item);
+                return item.composeProjectName;
             default:
-                return getImagePropertyValue({ ...item, Name: item.Image }, property);
+                return getImagePropertyValue(item, property);
         }
     }
 
@@ -113,24 +118,10 @@ export class ContainersTreeItem extends LocalRootTreeItemBase<DockerContainer, C
         return ext.context.globalState.get<boolean>('vscode-docker.container.newContainerUser', true);
     }
 
-    private async updateNewContainerUser(items: DockerContainer[]): Promise<void> {
+    private async updateNewContainerUser(items: ILocalItem[]): Promise<void> {
         if (this.newContainerUser && items && items.length > 0) {
             this.newContainerUser = false;
             await ext.context.globalState.update('vscode-docker.container.newContainerUser', false);
         }
-    }
-}
-
-const NonComposeGroupName = localize('vscode-docker.tree.containers.otherContainers', 'Other Containers');
-
-function getComposeProjectName(container: DockerContainer): string {
-    const labels = Object.keys(container.Labels)
-        .map(label => ({ label: label, value: container.Labels[label] }));
-
-    const composeProject = labels.find(l => l.label === 'com.docker.compose.project');
-    if (composeProject) {
-        return composeProject.value;
-    } else {
-        return NonComposeGroupName;
     }
 }

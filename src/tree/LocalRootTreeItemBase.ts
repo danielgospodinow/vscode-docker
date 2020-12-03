@@ -7,8 +7,6 @@ import { ConfigurationChangeEvent, ConfigurationTarget, TreeView, TreeViewVisibi
 import { AzExtParentTreeItem, AzExtTreeItem, AzureWizard, GenericTreeItem, IActionContext, IParsedError, parseError, registerEvent } from "vscode-azureextensionui";
 import { showDockerInstallNotification } from "../commands/dockerInstaller";
 import { configPrefix } from "../constants";
-import { DockerObject } from "../docker/Common";
-import { NotSupportedError } from "../docker/NotSupportedError";
 import { ext } from "../extensionVariables";
 import { localize } from "../localize";
 import { dockerInstallStatusProvider } from "../utils/DockerInstallStatusProvider";
@@ -24,8 +22,14 @@ import { TreeSettingStep } from "./settings/TreeSettingStep";
 
 type DockerStatus = 'NotInstalled' | 'Installed' | 'Running';
 
-export type LocalChildType<T extends DockerObject> = new (parent: AzExtParentTreeItem, item: T) => AzExtTreeItem & { createdTime: number; };
-export type LocalChildGroupType<TItem extends DockerObject, TProperty extends string | CommonProperty> = new (parent: LocalRootTreeItemBase<TItem, TProperty>, group: string, items: TItem[]) => LocalGroupTreeItemBase<TItem, TProperty>;
+export interface ILocalItem {
+    createdTime: number;
+    treeId: string;
+    data: unknown;
+}
+
+export type LocalChildType<T extends ILocalItem> = new (parent: AzExtParentTreeItem, item: T) => AzExtTreeItem & { createdTime: number; };
+export type LocalChildGroupType<TItem extends ILocalItem, TProperty extends string | CommonProperty> = new (parent: LocalRootTreeItemBase<TItem, TProperty>, group: string, items: TItem[]) => LocalGroupTreeItemBase<TItem, TProperty>;
 
 const groupByKey: string = 'groupBy';
 const sortByKey: string = 'sortBy';
@@ -33,7 +37,7 @@ export const labelKey: string = 'label';
 export const descriptionKey: string = 'description';
 let dockerInstallNotificationShownToUser: boolean = false;
 
-export abstract class LocalRootTreeItemBase<TItem extends DockerObject, TProperty extends string | CommonProperty> extends AzExtParentTreeItem {
+export abstract class LocalRootTreeItemBase<TItem extends ILocalItem, TProperty extends string | CommonProperty> extends AzExtParentTreeItem {
     public abstract labelSettingInfo: ITreeSettingInfo<TProperty>;
     public abstract descriptionSettingInfo: ITreeArraySettingInfo<TProperty>;
     public abstract groupBySettingInfo: ITreeSettingInfo<TProperty | CommonGroupBy>;
@@ -47,7 +51,7 @@ export abstract class LocalRootTreeItemBase<TItem extends DockerObject, TPropert
     public abstract childType: LocalChildType<TItem>;
     public abstract childGroupType: LocalChildGroupType<TItem, TProperty>;
 
-    public abstract getItems(context: IActionContext): Promise<TItem[] | undefined>;
+    public abstract getItems(): Promise<TItem[] | undefined>;
     public abstract getPropertyValue(item: TItem, property: TProperty): string;
 
     public static autoRefreshViews: boolean = true;
@@ -91,7 +95,7 @@ export abstract class LocalRootTreeItemBase<TItem extends DockerObject, TPropert
                 const refreshInterval: number = this.getRefreshInterval();
                 intervalId = setInterval(
                     async () => {
-                        if (this.autoRefreshEnabled && await this.hasChanged(context)) {
+                        if (this.autoRefreshEnabled && await this.hasChanged()) {
                             // Auto refresh could be disabled while invoking the hasChanged()
                             // So check again before starting the refresh.
                             if (this.autoRefreshEnabled) {
@@ -133,7 +137,7 @@ export abstract class LocalRootTreeItemBase<TItem extends DockerObject, TPropert
             // eslint-disable-next-line @typescript-eslint/no-floating-promises
             ext.activityMeasurementService.recordActivity('overallnoedit');
 
-            this._currentItems = this._itemsFromPolling || await this.getSortedItems(context);
+            this._currentItems = this._itemsFromPolling || await this.getSortedItems();
             this.clearPollingCache();
             this.failedToConnect = false;
             this._currentDockerStatus = 'Running';
@@ -229,7 +233,7 @@ export abstract class LocalRootTreeItemBase<TItem extends DockerObject, TPropert
                     const [group] = itemOrGroup;
                     return group;
                 } else {
-                    return getTreeId(itemOrGroup);
+                    return itemOrGroup.treeId;
                 }
             }
         );
@@ -324,10 +328,6 @@ export abstract class LocalRootTreeItemBase<TItem extends DockerObject, TPropert
     }
 
     private getDockerErrorTreeItems(context: IActionContext, error: IParsedError, dockerInstalled: boolean): AzExtTreeItem[] {
-        if (error.errorType === NotSupportedError.ErrorType) {
-            return [new GenericTreeItem(this, { label: localize('vscode-docker.tree.contextNotSupported', 'This view is not supported in the current Docker context.'), contextValue: 'contextNotSupported' })];
-        }
-
         const result: AzExtTreeItem[] = dockerInstalled
             ? [
                 new GenericTreeItem(this, { label: localize('vscode-docker.tree.dockerNotRunning', 'Failed to connect. Is Docker running?'), contextValue: 'dockerConnectionError', iconPath: getThemedIconPath('statusWarning') }),
@@ -345,21 +345,21 @@ export abstract class LocalRootTreeItemBase<TItem extends DockerObject, TPropert
         return result;
     }
 
-    private async getSortedItems(context: IActionContext): Promise<TItem[]> {
-        if (ext.treeInitError === undefined) {
-            const items: TItem[] = await this.getItems(context) || [];
-            return items.sort((a, b) => getTreeId(a).localeCompare(getTreeId(b)));
+    private async getSortedItems(): Promise<TItem[]> {
+        if (ext.dockerodeInitError === undefined) {
+            const items: TItem[] = await this.getItems() || [];
+            return items.sort((a, b) => a.treeId.localeCompare(b.treeId));
         } else {
-            throw ext.treeInitError;
+            throw ext.dockerodeInitError;
         }
     }
 
-    private async hasChanged(context: IActionContext): Promise<boolean> {
+    private async hasChanged(): Promise<boolean> {
         let pollingDockerStatus: DockerStatus;
         let isDockerStatusChanged = false;
 
         try {
-            this._itemsFromPolling = await this.getSortedItems(context);
+            this._itemsFromPolling = await this.getSortedItems();
             pollingDockerStatus = 'Running';
         } catch (error) {
             this.clearPollingCache();
@@ -380,7 +380,7 @@ export abstract class LocalRootTreeItemBase<TItem extends DockerObject, TPropert
                 return false;
             } else {
                 return !array1.some((item1, index) => {
-                    return getTreeId(item1) !== getTreeId(array2[index]);
+                    return item1.treeId !== array2[index].treeId;
                 });
             }
         } else {
@@ -395,11 +395,4 @@ export abstract class LocalRootTreeItemBase<TItem extends DockerObject, TPropert
             showDockerInstallNotification();
         }
     }
-}
-
-export function getTreeId(object: DockerObject): string {
-    // Id and State aren't defined for all Docker objects, but the concatenation of whatever exists of the three of these is enough to always be unique
-    // *and* change the ID when the state of the object changes
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    return `${object.Id}${object.Name}${(object as any).State}${(object as any).Current}`;
 }

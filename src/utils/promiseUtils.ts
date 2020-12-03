@@ -28,8 +28,7 @@ export async function delay(ms: number, token?: vscode.CancellationToken): Promi
     });
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export async function getCancelPromise(token: vscode.CancellationToken, errorConstructor?: new (...args: any[]) => Error, ...args: unknown[]): Promise<never> {
+export async function getCancelPromise(token: vscode.CancellationToken, errorConstructor?: new (...args: unknown[]) => Error, ...args: unknown[]): Promise<never> {
     return new Promise((resolve, reject) => {
         const disposable = token.onCancellationRequested(() => {
             disposable.dispose();

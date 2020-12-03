@@ -3,11 +3,10 @@
  *  Licensed under the MIT License. See LICENSE.md in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
+import * as Dockerode from 'dockerode';
 import * as osNode from 'os';
 import { ExtensionContext, TreeView } from "vscode";
 import { AzExtTreeDataProvider, AzExtTreeItem, IAzExtOutputChannel, IAzureUserInput } from "vscode-azureextensionui";
-import { ContextManager } from './docker/ContextManager';
-import { DockerApiClient } from './docker/DockerApiClient';
 import { IActivityMeasurementService } from './telemetry/ActivityMeasurementService';
 import { IExperimentationServiceAdapter } from './telemetry/ExperimentationServiceAdapter';
 import { ContainersTreeItem } from './tree/containers/ContainersTreeItem';
@@ -34,9 +33,8 @@ export namespace ext {
 
     export let terminalProvider: ITerminalProvider;
     export let keytar: IKeytar | undefined;
-    export let dockerContextManager: ContextManager;
-    export let dockerClient: DockerApiClient;
-    export let treeInitError: unknown;
+    export let dockerode: Dockerode;
+    export let dockerodeInitError: unknown;
     export const ignoreBundle = !/^(false|0)?$/i.test(process.env.AZCODE_DOCKER_IGNORE_BUNDLE || '');
 
     export let imagesTree: AzExtTreeDataProvider;

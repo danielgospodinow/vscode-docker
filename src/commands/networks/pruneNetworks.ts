@@ -7,6 +7,7 @@ import * as vscode from 'vscode';
 import { IActionContext } from 'vscode-azureextensionui';
 import { ext } from '../../extensionVariables';
 import { localize } from '../../localize';
+import { callDockerodeWithErrorHandling } from '../../utils/callDockerode';
 
 export async function pruneNetworks(context: IActionContext): Promise<void> {
     const confirmPrune: string = localize('vscode-docker.commands.networks.prune.confirm', 'Are you sure you want to remove all unused networks?');
@@ -16,9 +17,10 @@ export async function pruneNetworks(context: IActionContext): Promise<void> {
     await vscode.window.withProgress(
         { location: vscode.ProgressLocation.Notification, title: localize('vscode-docker.commands.networks.pruning', 'Pruning networks...') },
         async () => {
-            const result = await ext.dockerClient.pruneNetworks(context);
+            const result = await callDockerodeWithErrorHandling(async () => ext.dockerode.pruneNetworks(), context);
 
-            let message = localize('vscode-docker.commands.networks.prune.removed', 'Removed {0} networks(s).', result.ObjectsDeleted);
+            const numDeleted = (result.NetworksDeleted || []).length;
+            let message = localize('vscode-docker.commands.networks.prune.removed', 'Removed {0} networks(s).', numDeleted);
             // don't wait
             /* eslint-disable-next-line @typescript-eslint/no-floating-promises */
             vscode.window.showInformationMessage(message);

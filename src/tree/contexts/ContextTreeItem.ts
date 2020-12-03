@@ -4,18 +4,18 @@
  *--------------------------------------------------------------------------------------------*/
 
 import { AzExtParentTreeItem, AzExtTreeItem, IActionContext } from "vscode-azureextensionui";
-import { DockerContext, DockerContextInspection } from "../../docker/Contexts";
 import { ext } from "../../extensionVariables";
+import { dockerContextManager } from "../../utils/dockerContextManager";
 import { getThemedIconPath, IconPath } from '../IconPath';
-import { getTreeId } from "../LocalRootTreeItemBase";
+import { LocalContextInfo } from "./LocalContextInfo";
 
 export class ContextTreeItem extends AzExtTreeItem {
     public static allContextRegExp: RegExp = /Context$/;
     public static removableContextRegExp: RegExp = /^customContext$/i;
 
-    private readonly _item: DockerContext;
+    private readonly _item: LocalContextInfo;
 
-    public constructor(parent: AzExtParentTreeItem, item: DockerContext) {
+    public constructor(parent: AzExtParentTreeItem, item: LocalContextInfo) {
         super(parent);
         this._item = item;
     }
@@ -31,11 +31,11 @@ export class ContextTreeItem extends AzExtTreeItem {
     }
 
     public get createdTime(): number {
-        return undefined;
+        return this._item.createdTime;
     }
 
     public get id(): string {
-        return getTreeId(this._item);
+        return this._item.treeId;
     }
 
     public get label(): string {
@@ -49,28 +49,28 @@ export class ContextTreeItem extends AzExtTreeItem {
     }
 
     public get name(): string {
-        return this._item.Name;
+        return this._item.data.Name;
     }
 
     public get current(): boolean {
-        return this._item.Current;
+        return this._item.data.Current;
     }
 
     public get iconPath(): IconPath {
-        if (this._item.Current) {
+        if (this._item.data.Current) {
             return getThemedIconPath('connect');
         }
     }
 
     public async deleteTreeItemImpl(context: IActionContext): Promise<void> {
-        return ext.dockerContextManager.remove(context, this.name);
+        return dockerContextManager.remove(this.name);
     }
 
-    public async inspect(context: IActionContext): Promise<DockerContextInspection> {
-        return ext.dockerContextManager.inspect(context, this.name);
+    public async inspect(context: IActionContext): Promise<string> {
+        return dockerContextManager.inspect(this.name)
     }
 
     public async use(context: IActionContext): Promise<void> {
-        return ext.dockerContextManager.use(context, this.name);
+        return dockerContextManager.use(this.name);
     }
 }

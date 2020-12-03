@@ -18,10 +18,6 @@ export class Lazy<T> {
         this._valueLifetime = undefined;
     }
 
-    public clear(): void {
-        this._isValueCreated = false;
-    }
-
     public get value(): T {
         if (this._isValueCreated) {
             return this._value;
@@ -59,10 +55,6 @@ export class AsyncLazy<T> {
 
     public cacheForever(): void {
         this._valueLifetime = undefined;
-    }
-
-    public clear(): void {
-        this._isValueCreated = false;
     }
 
     public async getValue(): Promise<T> {

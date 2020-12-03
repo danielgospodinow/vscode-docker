@@ -3,25 +3,26 @@
  *  Licensed under the MIT License. See LICENSE.md in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
+import { NetworkInspectInfo } from "dockerode";
 import { workspace } from "vscode";
-import { IActionContext } from "vscode-azureextensionui";
 import { builtInNetworks, configPrefix } from "../../constants";
-import { DockerNetwork } from "../../docker/Networks";
 import { ext } from "../../extensionVariables";
 import { localize } from '../../localize';
+import { callDockerodeAsync } from "../../utils/callDockerode";
 import { LocalChildGroupType, LocalChildType, LocalRootTreeItemBase } from "../LocalRootTreeItemBase";
 import { CommonGroupBy, getCommonPropertyValue, groupByNoneProperty } from "../settings/CommonProperties";
 import { ITreeArraySettingInfo, ITreeSettingInfo } from "../settings/ITreeSettingInfo";
+import { LocalNetworkInfo } from "./LocalNetworkInfo";
 import { NetworkGroupTreeItem } from "./NetworkGroupTreeItem";
 import { networkProperties, NetworkProperty } from "./NetworkProperties";
 import { NetworkTreeItem } from "./NetworkTreeItem";
 
-export class NetworksTreeItem extends LocalRootTreeItemBase<DockerNetwork, NetworkProperty> {
+export class NetworksTreeItem extends LocalRootTreeItemBase<LocalNetworkInfo, NetworkProperty> {
     public treePrefix: string = 'networks';
     public label: string = localize('vscode-docker.tree.networks.label', 'Networks');
     public configureExplorerTitle: string = localize('vscode-docker.tree.networks.configure', 'Configure networks explorer');
-    public childType: LocalChildType<DockerNetwork> = NetworkTreeItem;
-    public childGroupType: LocalChildGroupType<DockerNetwork, NetworkProperty> = NetworkGroupTreeItem;
+    public childType: LocalChildType<LocalNetworkInfo> = NetworkTreeItem;
+    public childGroupType: LocalChildGroupType<LocalNetworkInfo, NetworkProperty> = NetworkGroupTreeItem;
 
     public labelSettingInfo: ITreeSettingInfo<NetworkProperty> = {
         properties: networkProperties,
@@ -42,27 +43,27 @@ export class NetworksTreeItem extends LocalRootTreeItemBase<DockerNetwork, Netwo
         return this.groupBySetting === 'None' ? 'network' : 'network group';
     }
 
-    public async getItems(context: IActionContext): Promise<DockerNetwork[]> {
+    public async getItems(): Promise<LocalNetworkInfo[]> {
         let config = workspace.getConfiguration(configPrefix);
         let showBuiltInNetworks: boolean = config.get<boolean>('networks.showBuiltInNetworks');
 
-        let networks = await ext.dockerClient.getNetworks(context) || [];
+        let networks = <NetworkInspectInfo[]>await callDockerodeAsync(async () => ext.dockerode.listNetworks()) || [];
 
         if (!showBuiltInNetworks) {
             networks = networks.filter(network => !builtInNetworks.includes(network.Name));
         }
 
-        return networks;
+        return networks.map(n => new LocalNetworkInfo(n));
     }
 
-    public getPropertyValue(item: DockerNetwork, property: NetworkProperty): string {
+    public getPropertyValue(item: LocalNetworkInfo, property: NetworkProperty): string {
         switch (property) {
             case 'NetworkDriver':
-                return item.Driver;
+                return item.networkDriver;
             case 'NetworkId':
-                return item.Id.slice(0, 12);
+                return item.networkId.slice(0, 12);
             case 'NetworkName':
-                return item.Name;
+                return item.networkName;
             default:
                 return getCommonPropertyValue(item, property);
         }

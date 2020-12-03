@@ -8,13 +8,13 @@ import * as os from 'os';
 import * as path from 'path';
 import { DebugConfiguration, MessageItem, window } from 'vscode';
 import { DialogResponses, IActionContext, UserCancelledError } from 'vscode-azureextensionui';
-import { DockerOSType } from '../../docker/Common';
 import { ext } from '../../extensionVariables';
 import { localize } from '../../localize';
 import { NetCoreTaskHelper, NetCoreTaskOptions } from '../../tasks/netcore/NetCoreTaskHelper';
 import { ContainerTreeItem } from '../../tree/containers/ContainerTreeItem';
+import { callDockerodeWithErrorHandling } from '../../utils/callDockerode';
 import { LocalOSProvider } from '../../utils/LocalOSProvider';
-import { getDockerOSType } from '../../utils/osUtils';
+import { DockerOSType, getDockerOSType } from '../../utils/osUtils';
 import { pathNormalize } from '../../utils/pathNormalize';
 import { PlatformOS } from '../../utils/platform';
 import { unresolveWorkspaceFolder } from '../../utils/resolveVariables';
@@ -109,8 +109,10 @@ export class NetCoreDebugHelper implements DebugHelper {
         switch (debugConfiguration.request) {
             case 'launch':
                 return this.resolveLauchDebugConfiguration(context, debugConfiguration);
+                break;
             case 'attach':
                 return this.resolveAttachDebugConfiguration(context, debugConfiguration);
+                break;
             default:
                 throw Error(localize('vscode-docker.debug.netcore.unknownDebugRequest', 'Unknown request {0} specified in the debug config.', debugConfiguration.request));
         }
@@ -293,8 +295,9 @@ export class NetCoreDebugHelper implements DebugHelper {
     private async copyDebuggerToContainer(context: IActionContext, containerName: string, containerDebuggerDirectory: string, containerOS: DockerOSType): Promise<void> {
         const dockerClient = new CliDockerClient(new ChildProcessProvider());
         if (containerOS === 'windows') {
-            const containerInfo = await ext.dockerClient.inspectContainer(context, containerName);
-            if (containerInfo?.HostConfig?.Isolation === 'hyperv') {
+            const containerInfo = await callDockerodeWithErrorHandling(async () => ext.dockerode.getContainer(containerName).inspect(), context);
+            const isolation = containerInfo.HostConfig.Isolation;
+            if (isolation && isolation === 'hyperv') {
                 context.errorHandling.suppressReportIssue = true;
                 throw new Error(localize('vscode-docker.debug.netcore.isolationNotSupported', 'Attaching a debugger to a Hyper-V container is not supported.'));
             }
