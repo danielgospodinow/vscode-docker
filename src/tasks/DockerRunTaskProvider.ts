@@ -36,7 +36,6 @@ export class DockerRunTaskProvider extends DockerTaskProvider {
         context.actionContext.telemetry.properties.containerOS = definition.dockerRun.os || 'Linux';
 
         context.buildDefinition = await getAssociatedDockerBuildTask(task);
-        context.actionContext.telemetry.properties.buildTaskFound = context.buildDefinition ? 'true' : 'false';
 
         const helper = this.getHelper(context.platform);
 
