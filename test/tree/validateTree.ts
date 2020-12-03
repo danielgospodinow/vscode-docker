@@ -7,13 +7,14 @@ import * as assert from 'assert';
 import { DockerApiClient, DockerContainer, DockerVolume, DockerNetwork, DockerImage, AzExtParentTreeItem, AzExtTreeItem, ext, IActionContext } from '../../extension.bundle';
 import { runWithSetting } from '../runWithSetting';
 
-export function generateCreatedTimeInMs(days: number): number {
-    const daysInMs = days * 24 * 60 * 60 * 1000;
-    return new Date().valueOf() - daysInMs;
+export function generateCreatedTimeInSec(days: number): number {
+    const daysInSec = days * 24 * 60 * 60;
+    return new Date().valueOf() / 1000 - daysInSec;
 }
 
 export function generateCreatedTimeISOString(days: number): string {
-    return new Date(generateCreatedTimeInMs(days)).toISOString();
+    const daysInMS = days * 24 * 60 * 60 * 1000;
+    return new Date(new Date().valueOf() - daysInMS).toISOString();
 }
 
 export interface IValidateTreeOptions {
