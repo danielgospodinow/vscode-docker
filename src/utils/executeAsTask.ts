@@ -3,7 +3,6 @@
  *  Licensed under the MIT License. See LICENSE.md in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import * as os from 'os';
 import * as vscode from 'vscode';
 import { IActionContext } from 'vscode-azureextensionui';
 import { addDockerSettingsToEnv } from './addDockerSettingsToEnv';
@@ -23,7 +22,7 @@ export async function executeAsTask(context: IActionContext, command: string, na
         options.workspaceFolder ?? vscode.TaskScope.Workspace,
         name,
         'Docker',
-        new vscode.ShellExecution(command, { cwd: options.cwd || options.workspaceFolder?.uri?.fsPath || os.homedir(), env: newEnv }),
+        new vscode.ShellExecution(command, { cwd: options.cwd || options.workspaceFolder?.uri?.fsPath, env: newEnv }),
         [] // problemMatchers
     );
 
