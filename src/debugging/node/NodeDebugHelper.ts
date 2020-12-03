@@ -73,9 +73,10 @@ export class NodeDebugHelper implements DebugHelper {
         };
 
         const resolvedConfiguration: NodeDebugConfiguration = {
-            ...debugConfiguration,
             ...options,
+            name: debugConfiguration.name,
             dockerOptions,
+            preLaunchTask: debugConfiguration.preLaunchTask,
             request: 'attach',
             type: 'node2'
         };

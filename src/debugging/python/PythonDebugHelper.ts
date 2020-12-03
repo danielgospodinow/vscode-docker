@@ -83,7 +83,8 @@ export class PythonDebugHelper implements DebugHelper {
         const launcherPath = path.join(ext.context.asAbsolutePath('resources'), 'python', 'launcher.py');
 
         return {
-            ...{ ...debugConfiguration, python: undefined }, // Get the original debug configuration, minus the "python" property which belongs to the Docker launch config and confuses the Python extension
+            name: debugConfiguration.name,
+            preLaunchTask: debugConfiguration.preLaunchTask,
             type: 'python',
             request: 'launch',
             pathMappings: debugConfiguration.python.pathMappings,
