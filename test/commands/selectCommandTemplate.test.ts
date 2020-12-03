@@ -591,10 +591,6 @@ async function runWithCommandSetting(
                 ContextType: contextType,
             } as DockerContext;
         },
-
-        getCurrentContextType: async () => {
-            return Promise.resolve(<any>contextType);
-        }
     };
 
     try {
