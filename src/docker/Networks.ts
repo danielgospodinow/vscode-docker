@@ -13,11 +13,4 @@ export interface DockerNetwork extends DockerObject {
 
 export interface DockerNetworkInspection extends DockerObject {
     readonly Driver: DriverType;
-    readonly IPAM: {
-        readonly Config: [
-            {
-                readonly Gateway: string;
-            }
-        ]
-    }
 }

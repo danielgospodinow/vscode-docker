@@ -4,8 +4,7 @@
         <WriteLinesToFile
             File="$(InfoOutputPath)"
             Lines="$(AssemblyName).dll
-$(TargetFramework)$(TargetFrameworks.Split(';')[0])
-$(OutputPath)$(AssemblyName).dll"
+$(TargetFramework)$(TargetFrameworks.Split(';')[0])"
             Overwrite="True" />
     </Target>
 </Project>

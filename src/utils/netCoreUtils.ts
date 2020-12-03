@@ -5,15 +5,18 @@
 
 import * as fse from 'fs-extra';
 import * as path from 'path';
-import { SemVer } from 'semver';
+import { ChildProcessProvider } from '../debugging/coreclr/ChildProcessProvider';
+import { OSTempFileProvider } from '../debugging/coreclr/tempFileProvider';
 import { ext } from '../extensionVariables';
 import { localize } from '../localize';
-import { getTempFileName } from './osUtils';
+import { LocalOSProvider } from './LocalOSProvider';
 import { execAsync } from './spawnAsync';
 
+// eslint-disable-next-line @typescript-eslint/tslint/config
 export async function getNetCoreProjectInfo(target: 'GetBlazorManifestLocations' | 'GetProjectProperties', project: string): Promise<string[]> {
     const targetsFile = path.join(ext.context.asAbsolutePath('resources'), 'netCore', `${target}.targets`);
-    const outputFile = getTempFileName();
+    const tempFileProvider = new OSTempFileProvider(new LocalOSProvider(), new ChildProcessProvider());
+    const outputFile = tempFileProvider.getTempFilename();
 
     const command = `dotnet build /r:false /t:${target} /p:CustomAfterMicrosoftCommonTargets="${targetsFile}" /p:CustomAfterMicrosoftCommonCrossTargetingTargets="${targetsFile}" /p:InfoOutputPath="${outputFile}" "${project}"`;
 
@@ -34,14 +37,4 @@ export async function getNetCoreProjectInfo(target: 'GetBlazorManifestLocations'
             await fse.unlink(outputFile);
         }
     }
-}
-
-let dotNetVersion: SemVer | undefined;
-export async function getDotNetVersion(): Promise<SemVer> {
-    if (!dotNetVersion) {
-        const { stdout } = await execAsync('dotnet --version');
-        dotNetVersion = new SemVer(stdout);
-    }
-
-    return dotNetVersion;
 }

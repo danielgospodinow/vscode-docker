@@ -12,6 +12,7 @@ import { AzureUserInput, callWithTelemetryAndErrorHandling, createAzExtOutputCha
 import { ConfigurationParams, DidChangeConfigurationNotification, DocumentSelector, LanguageClient, LanguageClientOptions, Middleware, ServerOptions, TransportKind } from 'vscode-languageclient/lib/main';
 import { registerCommands } from './commands/registerCommands';
 import { COMPOSE_FILE_GLOB_PATTERN } from './constants';
+import { registerDebugConfigurationProvider } from './debugging/coreclr/registerDebugConfigurationProvider';
 import { registerDebugProvider } from './debugging/DebugHelper';
 import { DockerContextManager } from './docker/ContextManager';
 import { DockerComposeCompletionItemProvider } from './dockerCompose/dockerComposeCompletionItemProvider';
@@ -31,7 +32,6 @@ import { registerTrees } from './tree/registerTrees';
 import { AzureAccountExtensionListener } from './utils/AzureAccountExtensionListener';
 import { cryptoUtils } from './utils/cryptoUtils';
 import { Keytar } from './utils/keytar';
-import { isLinux, isMac, isWindows } from './utils/osUtils';
 import { bufferToString } from './utils/spawnAsync';
 
 export type KeyInfo = { [keyName: string]: string };
@@ -123,6 +123,8 @@ export async function activateInternal(ctx: vscode.ExtensionContext, perfStats: 
         registerTrees();
         registerCommands();
 
+        registerDebugConfigurationProvider(ctx);
+
         registerDebugProvider(ctx);
         registerTaskProviders(ctx);
 
@@ -141,7 +143,7 @@ export async function deactivateInternal(ctx: vscode.ExtensionContext): Promise<
 
 async function getDockerInstallationIDHash(): Promise<string> {
     try {
-        if (!isLinux()) {
+        if (os.platform() === 'win32' || os.platform() === 'darwin') {
             const cached = ext.context.globalState.get<string | undefined>('docker.installIdHash', undefined);
 
             if (cached) {
@@ -149,9 +151,9 @@ async function getDockerInstallationIDHash(): Promise<string> {
             }
 
             let installIdFilePath: string | undefined;
-            if (isWindows() && process.env.APPDATA) {
+            if (os.platform() === 'win32' && process.env.APPDATA) {
                 installIdFilePath = path.join(process.env.APPDATA, 'Docker', '.trackid');
-            } else if (isMac()) {
+            } else if (os.platform() === 'darwin') {
                 installIdFilePath = path.join(os.homedir(), 'Library', 'Group Containers', 'group.com.docker', 'userId');
             }
 

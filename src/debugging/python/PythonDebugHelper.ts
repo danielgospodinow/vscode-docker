@@ -7,8 +7,10 @@ import * as path from 'path';
 import { ext } from '../../extensionVariables';
 import { PythonExtensionHelper } from '../../tasks/python/PythonExtensionHelper';
 import { PythonRunTaskDefinition } from '../../tasks/python/PythonTaskHelper';
-import { isLinux } from '../../utils/osUtils';
+import LocalOSProvider from '../../utils/LocalOSProvider';
 import { PythonProjectType } from '../../utils/pythonUtils';
+import ChildProcessProvider from '../coreclr/ChildProcessProvider';
+import CliDockerClient from '../coreclr/CliDockerClient';
 import { DebugHelper, DockerDebugContext, DockerDebugScaffoldContext, inferContainerName, ResolvedDebugConfiguration, resolveDockerServerReadyAction } from '../DebugHelper';
 import { DockerDebugConfigurationBase } from '../DockerDebugConfigurationBase';
 import { DockerDebugConfiguration } from '../DockerDebugConfigurationProvider';
@@ -94,7 +96,7 @@ export class PythonDebugHelper implements DebugHelper {
                 removeContainerAfterDebug: debugConfiguration.removeContainerAfterDebug
             },
             debugLauncherPath: debugConfiguration.debugLauncherPath || launcherPath,
-            debugAdapterHost: debugConfiguration.debugAdapterHost || await this.getDebugAdapterHost(context),
+            debugAdapterHost: debugConfiguration.debugAdapterHost || await this.getDebugAdapterHost(),
             console: debugConfiguration.console || "integratedTerminal",
             internalConsoleOptions: debugConfiguration.internalConsoleOptions || "openOnSessionStart",
             module: debugConfiguration.module || pythonRunTaskOptions.module,
@@ -116,18 +118,23 @@ export class PythonDebugHelper implements DebugHelper {
         }
     }
 
-    private async getDebugAdapterHost(context: DockerDebugContext): Promise<string> {
+    private async getDebugAdapterHost(): Promise<string> {
+        const osProvider = new LocalOSProvider();
+
         // For Windows and Mac, we ask debugpy to listen on localhost:{randomPort} and then
         // we use 'host.docker.internal' in the launcher to get the host's ip address.
-        if (!isLinux()) {
+        if (osProvider.os !== 'Linux') {
             return 'localhost';
         }
 
         // For Linux, 'host.docker.internal' doesn't work, so we ask debugpy to listen
         // on the bridge network's ip address (predefined network).
-        const networkInspection = await ext.dockerClient.inspectNetwork(context.actionContext, 'bridge', context.cancellationToken);
+        const dockerClient = new CliDockerClient(new ChildProcessProvider());
+        const dockerBridgeIp = await dockerClient.inspectObject('bridge', {
+            format: '{{(index .IPAM.Config 0).Gateway}}'
+        });
 
-        return networkInspection?.IPAM?.Config?.[0].Gateway;
+        return dockerBridgeIp;
     }
 }
 

@@ -4,14 +4,16 @@
  *--------------------------------------------------------------------------------------------*/
 
 import { IActionContext } from 'vscode-azureextensionui';
+import LocalOSProvider from '../utils/LocalOSProvider';
 import { openExternal } from '../utils/openExternal';
-import { isMac, isWindows } from '../utils/osUtils';
 import { MacDockerInstaller, WindowsDockerInstaller } from './dockerInstaller';
 
 export async function installDocker(context: IActionContext): Promise<void> {
-    if (isWindows()) {
+    const osProvider = new LocalOSProvider();
+
+    if (osProvider.os === 'Windows') {
         await (new WindowsDockerInstaller()).downloadAndInstallDocker(context);
-    } else if (isMac()) {
+    } else if (osProvider.os === 'Mac') {
         await (new MacDockerInstaller()).downloadAndInstallDocker(context);
     } else {
         await openExternal('https://aka.ms/download-docker-linux-vscode');

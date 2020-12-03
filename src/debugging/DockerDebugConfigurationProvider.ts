@@ -9,6 +9,7 @@ import { DockerOrchestration } from '../constants';
 import { ext } from '../extensionVariables';
 import { localize } from '../localize';
 import { getAssociatedDockerRunTask } from '../tasks/TaskHelper';
+import { DockerClient } from './coreclr/CliDockerClient';
 import { DebugHelper, DockerDebugContext, ResolvedDebugConfiguration } from './DebugHelper';
 import { DockerPlatform, getPlatform } from './DockerPlatformHelper';
 import { NetCoreDockerDebugConfiguration } from './netcore/NetCoreDebugHelper';
@@ -25,6 +26,7 @@ export interface DockerAttachConfiguration extends NetCoreDockerDebugConfigurati
 
 export class DockerDebugConfigurationProvider implements DebugConfigurationProvider {
     public constructor(
+        private readonly dockerClient: DockerClient,
         private readonly helpers: { [key in DockerPlatform]: DebugHelper }
     ) { }
 
@@ -98,7 +100,7 @@ export class DockerDebugConfigurationProvider implements DebugConfigurationProvi
 
         if (resolvedConfiguration) {
             await this.validateResolvedConfiguration(resolvedConfiguration);
-            await this.registerRemoveContainerAfterDebugging(context.actionContext, resolvedConfiguration);
+            await this.registerRemoveContainerAfterDebugging(resolvedConfiguration);
             await this.registerOutputPortsAtDebugging(context.actionContext, resolvedConfiguration);
         }
 
@@ -113,11 +115,11 @@ export class DockerDebugConfigurationProvider implements DebugConfigurationProvi
         }
     }
 
-    private async registerRemoveContainerAfterDebugging(context: IActionContext, resolvedConfiguration: ResolvedDebugConfiguration): Promise<void> {
+    private async registerRemoveContainerAfterDebugging(resolvedConfiguration: ResolvedDebugConfiguration): Promise<void> {
         if ((resolvedConfiguration.dockerOptions?.removeContainerAfterDebug ?? true) &&
             resolvedConfiguration.dockerOptions?.containerName) {
             try {
-                await ext.dockerClient.removeContainer(context, resolvedConfiguration.dockerOptions.containerName);
+                await this.dockerClient.removeContainer(resolvedConfiguration.dockerOptions.containerName, { force: true });
             } catch { }
 
             // Now register the container for removal after the debug session ends
@@ -127,7 +129,7 @@ export class DockerDebugConfigurationProvider implements DebugConfigurationProvi
                 // Don't do anything if this isn't our debug session, or if it's a subprocess debug session (which is how Python does hot reload sessions)
                 if (sessionConfiguration?.dockerOptions?.containerName === resolvedConfiguration.dockerOptions.containerName && !(sessionConfiguration?.subProcessId)) {
                     try {
-                        await ext.dockerClient.removeContainer(context, resolvedConfiguration.dockerOptions.containerName);
+                        await this.dockerClient.removeContainer(resolvedConfiguration.dockerOptions.containerName, { force: true });
                     } finally {
                         disposable.dispose();
                     }

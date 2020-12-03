@@ -12,9 +12,9 @@ import { URL } from 'url';
 import { commands, Event, EventEmitter, workspace } from 'vscode';
 import { Disposable } from 'vscode';
 import { callWithTelemetryAndErrorHandling, IActionContext } from 'vscode-azureextensionui';
+import { LineSplitter } from '../debugging/coreclr/lineSplitter';
 import { ext } from '../extensionVariables';
 import { AsyncLazy } from '../utils/lazy';
-import { isWindows } from '../utils/osUtils';
 import { execAsync, spawnAsync } from '../utils/spawnAsync';
 import { DockerContext, DockerContextInspection, isNewContextType } from './Contexts';
 import { DockerodeApiClient } from './DockerodeApiClient/DockerodeApiClient';
@@ -190,7 +190,7 @@ export class DockerContextManager implements ContextManager, Disposable {
                 // If there's nothing inside ~/.docker/contexts/meta, then there's only the default, unmodifiable DOCKER_HOST-based context
                 // It is unnecessary to call `docker context inspect`
                 actionContext.telemetry.properties.hostSource = 'defaultContextOnly';
-                dockerHost = isWindows() ? WindowsLocalPipe : UnixLocalPipe;
+                dockerHost = os.platform() === 'win32' ? WindowsLocalPipe : UnixLocalPipe;
             } else {
                 dockerHost = undefined;
             }
@@ -208,14 +208,9 @@ export class DockerContextManager implements ContextManager, Disposable {
             // No value for DOCKER_HOST, and multiple contexts exist, so check them
             const result: DockerContext[] = [];
             const { stdout } = await execAsync('docker context ls --format="{{json .}}"', ContextCmdExecOptions);
-            const lines = stdout.split(/\r?\n/im);
+            const lines = LineSplitter.splitLines(stdout);
 
             for (const line of lines) {
-                // Blank lines should be skipped
-                if (!line) {
-                    continue;
-                }
-
                 const context = JSON.parse(line) as DockerContext;
                 result.push({
                     ...context,
@@ -251,7 +246,7 @@ export class DockerContextManager implements ContextManager, Disposable {
             loadResult = [{
                 ...defaultContext,
                 Current: true,
-                DockerEndpoint: isWindows() ? WindowsLocalPipe : UnixLocalPipe,
+                DockerEndpoint: os.platform() === 'win32' ? WindowsLocalPipe : UnixLocalPipe,
             } as DockerContext];
         }
 
