@@ -3,6 +3,7 @@
  *  Licensed under the MIT License. See License.md in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
+import * as vscode from 'vscode';
 import { ext } from '../../extensionVariables';
 import { localize } from '../../localize';
 import { Survey } from './SurveyManager';
@@ -23,6 +24,7 @@ async function isEligible(): Promise<boolean> {
     const overallActivity = ext.activityMeasurementService.getActivityMeasurement('overall');
     const noEditActivity = ext.activityMeasurementService.getActivityMeasurement('overallnoedit');
 
-    return overallActivity.totalSessions >= minimumOverallSessions &&
+    return (vscode.env.language === 'en' || vscode.env.language.startsWith('en-')) &&
+        overallActivity.totalSessions >= minimumOverallSessions &&
         noEditActivity.totalSessions <= maximumNotEditOnlySessions;
 }
