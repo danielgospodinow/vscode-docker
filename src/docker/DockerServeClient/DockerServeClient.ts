@@ -3,12 +3,11 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import { Containers as ContainersClient, Volumes as VolumesClient } from '@docker/sdk';
-import * as Containers from '@docker/sdk/containers';
-import * as Volumes from '@docker/sdk/volumes';
+import { Containers as ContainersClient } from '@docker/sdk';
+import { DeleteRequest, InspectRequest, InspectResponse, ListRequest, ListResponse, StartRequest, StopRequest } from '@docker/sdk/containers';
 import { Client as GrpcClient, Metadata } from '@grpc/grpc-js';
 import { CancellationToken } from 'vscode';
-import { IActionContext, parseError } from 'vscode-azureextensionui';
+import { IActionContext } from 'vscode-azureextensionui';
 import { localize } from '../../localize';
 import { DockerInfo, DockerOSType, PruneResult } from '../Common';
 import { DockerContainer, DockerContainerInspection } from '../Containers';
@@ -26,15 +25,11 @@ const dockerServeCallTimeout = 20 * 1000;
 
 export class DockerServeClient extends ContextChangeCancelClient implements DockerApiClient {
     private readonly containersClient: ContainersClient;
-    private readonly volumesClient: VolumesClient;
     private readonly callMetadata: Metadata;
 
     public constructor(currentContext: DockerContext) {
         super();
-
         this.containersClient = new ContainersClient();
-        this.volumesClient = new VolumesClient();
-
         this.callMetadata = new Metadata();
         this.callMetadata.add('context_key', currentContext.Name);
     }
@@ -49,20 +44,20 @@ export class DockerServeClient extends ContextChangeCancelClient implements Dock
     }
 
     public async getContainers(context: IActionContext, token?: CancellationToken): Promise<DockerContainer[]> {
-        const request = new Containers.ListRequest()
+        const request = new ListRequest()
             .setAll(true);
 
-        const response: Containers.ListResponse = await this.promisify(context, this.containersClient, this.containersClient.list, request, token);
+        const response: ListResponse = await this.promisify(context, this.containersClient, this.containersClient.list, request, token);
         const result = response.getContainersList();
 
         return result.map(c => containerToDockerContainer(c.toObject()));
     }
 
     public async inspectContainer(context: IActionContext, ref: string, token?: CancellationToken): Promise<DockerContainerInspection> {
-        const request = new Containers.InspectRequest()
+        const request = new InspectRequest()
             .setId(ref);
 
-        const response: Containers.InspectResponse = await this.promisify(context, this.containersClient, this.containersClient.inspect, request, token);
+        const response: InspectResponse = await this.promisify(context, this.containersClient, this.containersClient.inspect, request, token);
         const responseContainer = response.toObject().container;
 
         const container = containerToDockerContainer(responseContainer);
@@ -92,7 +87,7 @@ export class DockerServeClient extends ContextChangeCancelClient implements Dock
     // #endregion Not supported by the Docker SDK yet
 
     public async startContainer(context: IActionContext, ref: string, token?: CancellationToken): Promise<void> {
-        const request = new Containers.StartRequest()
+        const request = new StartRequest()
             .setId(ref);
 
         await this.promisify(context, this.containersClient, this.containersClient.start, request, token);
@@ -104,18 +99,18 @@ export class DockerServeClient extends ContextChangeCancelClient implements Dock
     }
 
     public async stopContainer(context: IActionContext, ref: string, token?: CancellationToken): Promise<void> {
-        const request = new Containers.StopRequest()
+        const request = new StopRequest()
             .setId(ref);
 
         await this.promisify(context, this.containersClient, this.containersClient.stop, request, token);
     }
 
     public async removeContainer(context: IActionContext, ref: string, token?: CancellationToken): Promise<void> {
-        const request = new Containers.DeleteRequest()
+        const request = new DeleteRequest()
             .setId(ref)
             .setForce(true);
 
-        await this.promisify(context, this.containersClient, this.containersClient.delete, request, token);
+        await this.promisify(context, this.containersClient, this.containersClient.delete, request, token)
     }
 
     // #region Not supported by the Docker SDK yet
@@ -158,24 +153,11 @@ export class DockerServeClient extends ContextChangeCancelClient implements Dock
     public async removeNetwork(context: IActionContext, ref: string, token?: CancellationToken): Promise<void> {
         throw new NotSupportedError(context);
     }
-    // #endregion Not supported by the Docker SDK yet
 
     public async getVolumes(context: IActionContext, token?: CancellationToken): Promise<DockerVolume[]> {
-        const response: Volumes.VolumesListResponse = await this.promisify(context, this.volumesClient, this.volumesClient.volumesList, new Volumes.VolumesListRequest(), token);
-        const result = response.getVolumesList();
-
-        return result.map(v => v.toObject()).map(v => {
-            return {
-                Name: v.id,
-                Description: v.description,
-                Id: undefined,
-                CreatedTime: undefined,
-            };
-        });
-
+        throw new NotSupportedError(context);
     }
 
-    // #region Not supported by the Docker SDK yet
     public async inspectVolume(context: IActionContext, ref: string, token?: CancellationToken): Promise<DockerVolumeInspection> {
         throw new NotSupportedError(context);
     }
@@ -183,14 +165,11 @@ export class DockerServeClient extends ContextChangeCancelClient implements Dock
     public async pruneVolumes(context: IActionContext, token?: CancellationToken): Promise<PruneResult> {
         throw new NotSupportedError(context);
     }
-    // #endregion Not supported by the Docker SDK yet
 
     public async removeVolume(context: IActionContext, ref: string, token?: CancellationToken): Promise<void> {
-        const request = new Volumes.VolumesDeleteRequest()
-            .setId(ref);
-
-        await this.promisify(context, this.volumesClient, this.volumesClient.volumesDelete, request, token);
+        throw new NotSupportedError(context);
     }
+    // #endregion Not supported by the Docker SDK yet
 
     private async promisify<TRequest, TResponse>(
         context: IActionContext,
@@ -203,14 +182,7 @@ export class DockerServeClient extends ContextChangeCancelClient implements Dock
             try {
                 clientCallback.call(client, request, this.callMetadata, (err, response) => {
                     if (err) {
-                        const error = parseError(err);
-
-                        if (error.errorType === '12') {
-                            // Rewrap NotImplemented (12) as NotSupportedError
-                            reject(new NotSupportedError(context));
-                        } else {
-                            reject(err);
-                        }
+                        reject(err);
                     }
 
                     resolve(response);
