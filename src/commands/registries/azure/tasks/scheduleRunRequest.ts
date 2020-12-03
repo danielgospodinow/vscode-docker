@@ -3,8 +3,8 @@
  *  Licensed under the MIT License. See LICENSE.md in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import { ContainerRegistryManagementClient, ContainerRegistryManagementModels as AcrModels } from "@azure/arm-containerregistry";
-import { BlobClient, BlockBlobClient } from "@azure/storage-blob";
+import { ContainerRegistryManagementClient, ContainerRegistryManagementModels as AcrModels } from "azure-arm-containerregistry";
+import { BlobService, createBlobServiceWithSas } from "azure-storage";
 import * as fse from 'fs-extra';
 import * as os from 'os';
 import * as path from 'path';
@@ -15,11 +15,10 @@ import { ext } from '../../../../extensionVariables';
 import { localize } from "../../../../localize";
 import { AzureRegistryTreeItem } from '../../../../tree/registries/azure/AzureRegistryTreeItem';
 import { registryExpectedContextValues } from "../../../../tree/registries/registryContextValues";
-import { nonNullProp } from "../../../../utils/nonNull";
+import { getBlobInfo, streamLogs } from "../../../../utils/azureBlobUtils";
 import { delay } from '../../../../utils/promiseUtils';
 import { Item, quickPickDockerFileItem, quickPickYamlFileItem } from '../../../../utils/quickPickFile';
 import { quickPickWorkspaceFolder } from '../../../../utils/quickPickWorkspaceFolder';
-import { bufferToString } from "../../../../utils/spawnAsync";
 import { addImageTaggingTelemetry, getTagFromUserInput } from '../../../images/tagImage';
 
 const idPrecision = 6;
@@ -43,8 +42,8 @@ export async function scheduleRunRequest(context: IActionContext, requestType: '
 
     const node = await ext.registriesTree.showTreeItemPicker<AzureRegistryTreeItem>(registryExpectedContextValues.azure.registry, context);
 
-    const osPick = ['Linux', 'Windows'].map(item => <IAzureQuickPickItem<AcrModels.OS>>{ label: item, data: item });
-    const osType: AcrModels.OS = (await ext.ui.showQuickPick(osPick, { placeHolder: localize('vscode-docker.commands.registries.azure.tasks.selectOs', 'Select image base OS') })).data;
+    const osPick = ['Linux', 'Windows'].map(item => <IAzureQuickPickItem<string>>{ label: item, data: item });
+    const osType: string = (await ext.ui.showQuickPick(osPick, { placeHolder: localize('vscode-docker.commands.registries.azure.tasks.selectOs', 'Select image base OS') })).data;
 
     const tarFilePath: string = getTempSourceArchivePath();
 
@@ -79,7 +78,7 @@ export async function scheduleRunRequest(context: IActionContext, requestType: '
     const run = await node.client.registries.scheduleRun(node.resourceGroup, node.registryName, runRequest);
     ext.outputChannel.appendLine(localize('vscode-docker.commands.registries.azure.tasks.scheduledRun', 'Scheduled run {0}', run.runId));
 
-    void streamLogs(node, run);
+    await streamLogs(node, run);
     await fse.unlink(tarFilePath);
 }
 
@@ -125,55 +124,22 @@ async function uploadSourceCode(client: ContainerRegistryManagementClient, regis
     let uploadUrl: string = sourceUploadLocation.uploadUrl;
     let relativePath: string = sourceUploadLocation.relativePath;
 
-    const blobClient = new BlockBlobClient(uploadUrl);
+    ext.outputChannel.appendLine(localize('vscode-docker.commands.registries.azure.tasks.gettingBlobInfo', '   Getting blob info from upload URL'));
+    // Right now, accountName and endpointSuffix are unused, but will be used for streaming logs later.
+    let blobInfo = getBlobInfo(uploadUrl);
+    ext.outputChannel.appendLine(localize('vscode-docker.commands.registries.azure.tasks.creatingBlobService', '   Creating blob service'));
+    let blob: BlobService = createBlobServiceWithSas(blobInfo.host, blobInfo.sasToken);
     ext.outputChannel.appendLine(localize('vscode-docker.commands.registries.azure.tasks.creatingBlockBlob', '   Creating block blob'));
-    await blobClient.uploadFile(tarFilePath);
-
-    return relativePath;
-}
-
-const blobCheckInterval = 1000;
-const maxBlobChecks = 30;
-async function streamLogs(node: AzureRegistryTreeItem, run: AcrModels.Run): Promise<void> {
-    const result = await node.client.runs.getLogSasUrl(node.resourceGroup, node.registryName, run.runId);
-    const blobClient = new BlobClient(nonNullProp(result, 'logLink'));
-
-    // Start streaming the response to the output channel
-    let byteOffset = 0;
-    let totalChecks = 0;
-    let exists = false;
-
-    // ESLint is confused and thinks this promise is incomplete
-    // eslint-disable-next-line @typescript-eslint/tslint/config
     await new Promise((resolve, reject) => {
-        const timer = setInterval(
-            async () => {
-                if (!exists && !(exists = await blobClient.exists())) {
-                    totalChecks++;
-                    if (totalChecks >= maxBlobChecks) {
-                        clearInterval(timer);
-                        reject('Not found');
-                    }
-                }
-
-                const contentBuffer = await blobClient.downloadToBuffer(byteOffset);
-                const properties = await blobClient.getProperties();
-
-                byteOffset += contentBuffer.length;
-                const content = bufferToString(contentBuffer);
-
-                if (content) {
-                    ext.outputChannel.appendLine(content);
-                }
-
-                if (properties?.metadata?.complete) {
-                    clearInterval(timer);
-                    resolve();
-                }
-            },
-            blobCheckInterval
-        );
+        blob.createBlockBlobFromLocalFile(blobInfo.containerName, blobInfo.blobName, tarFilePath, (error, result, response): void => {
+            if (error) {
+                reject(error);
+            } else {
+                resolve({ result, response });
+            }
+        });
     });
+    return relativePath;
 }
 
 function getTempSourceArchivePath(): string {

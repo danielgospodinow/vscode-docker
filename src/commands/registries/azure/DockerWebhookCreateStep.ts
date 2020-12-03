@@ -3,8 +3,9 @@
  *  Licensed under the MIT License. See LICENSE.md in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import { WebSiteManagementModels } from '@azure/arm-appservice';
-import { ContainerRegistryManagementClient, ContainerRegistryManagementModels as AcrModels } from '@azure/arm-containerregistry';
+import ContainerRegistryManagementClient from 'azure-arm-containerregistry';
+import { Webhook, WebhookCreateParameters } from 'azure-arm-containerregistry/lib/models';
+import { Site } from 'azure-arm-website/lib/models';
 import { Progress } from "vscode";
 import * as vscode from "vscode";
 import { IAppServiceWizardContext, SiteClient } from "vscode-azureappservice";
@@ -31,7 +32,7 @@ export class DockerWebhookCreateStep extends AzureWizardExecuteStep<IAppServiceW
         message?: string;
         increment?: number;
     }>): Promise<void> {
-        const site: WebSiteManagementModels.Site = nonNullProp(context, 'site');
+        const site: Site = nonNullProp(context, 'site');
         let siteClient = new SiteClient(site, context);
         let appUri: string = (await siteClient.getWebAppPublishCredential()).scmUri;
         if (this._treeItem.parent instanceof AzureRepositoryTreeItem) {
@@ -70,7 +71,7 @@ export class DockerWebhookCreateStep extends AzureWizardExecuteStep<IAppServiceW
         return !!context.site && (this._treeItem.parent instanceof AzureRepositoryTreeItem || this._treeItem.parent instanceof DockerHubRepositoryTreeItem);
     }
 
-    private async createWebhookForApp(node: RemoteTagTreeItem, site: WebSiteManagementModels.Site, appUri: string): Promise<AcrModels.Webhook | undefined> {
+    private async createWebhookForApp(node: RemoteTagTreeItem, site: Site, appUri: string): Promise<Webhook | undefined> {
         const maxLength: number = 50;
         const numRandomChars: number = 6;
 
@@ -85,7 +86,7 @@ export class DockerWebhookCreateStep extends AzureWizardExecuteStep<IAppServiceW
         // variables derived from the container registry
         const registryTreeItem: AzureRegistryTreeItem = (<AzureRepositoryTreeItem>node.parent).parent;
         const crmClient = createAzureClient(registryTreeItem.parent.root, ContainerRegistryManagementClient);
-        let webhookCreateParameters: AcrModels.WebhookCreateParameters = {
+        let webhookCreateParameters: WebhookCreateParameters = {
             location: registryTreeItem.registryLocation,
             serviceUri: appUri,
             scope: `${node.parent.repoName}:${node.tag}`,

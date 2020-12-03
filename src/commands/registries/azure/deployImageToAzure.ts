@@ -3,7 +3,8 @@
  *  Licensed under the MIT License. See LICENSE.md in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import { WebSiteManagementClient, WebSiteManagementModels } from '@azure/arm-appservice';
+import { WebSiteManagementClient } from 'azure-arm-website';
+import { Site, SiteConfig } from 'azure-arm-website/lib/models';
 import { NameValuePair } from 'request';
 import { env, Progress, Uri, window } from "vscode";
 import { AppKind, AppServicePlanListStep, IAppServiceWizardContext, SiteNameStep, WebsiteOS } from "vscode-azureappservice";
@@ -50,7 +51,7 @@ export async function deployImageToAzure(context: IActionContext, node?: RemoteT
     LocationListStep.addStep(wizardContext, promptSteps);
 
     // Get site config before running the wizard so that any problems with the tag tree item are shown at the beginning of the process
-    const siteConfig: WebSiteManagementModels.SiteConfig = await getNewSiteConfig(node);
+    const siteConfig: SiteConfig = await getNewSiteConfig(node);
     const executeSteps: AzureWizardExecuteStep<IAppServiceWizardContext>[] = [
         new DockerSiteCreateStep(siteConfig),
         new DockerWebhookCreateStep(node)
@@ -61,7 +62,7 @@ export async function deployImageToAzure(context: IActionContext, node?: RemoteT
     await wizard.prompt();
     await wizard.execute();
 
-    const site: WebSiteManagementModels.Site = nonNullProp(wizardContext, 'site');
+    const site: Site = nonNullProp(wizardContext, 'site');
     const siteUri: string = `https://${site.defaultHostName}`;
     const createdNewWebApp: string = localize('vscode-docker.commands.registries.azure.deployImage.created', 'Successfully created web app "{0}": {1}', site.name, siteUri);
     ext.outputChannel.appendLine(createdNewWebApp);
@@ -77,7 +78,7 @@ export async function deployImageToAzure(context: IActionContext, node?: RemoteT
     });
 }
 
-async function getNewSiteConfig(node: RemoteTagTreeItem): Promise<WebSiteManagementModels.SiteConfig> {
+async function getNewSiteConfig(node: RemoteTagTreeItem): Promise<SiteConfig> {
     let registryTI: RegistryTreeItemBase = node.parent.parent;
 
     let username: string | undefined;
@@ -124,9 +125,9 @@ async function getNewSiteConfig(node: RemoteTagTreeItem): Promise<WebSiteManagem
 class DockerSiteCreateStep extends AzureWizardExecuteStep<IAppServiceWizardContext> {
     public priority: number = 140;
 
-    private _siteConfig: WebSiteManagementModels.SiteConfig;
+    private _siteConfig: SiteConfig;
 
-    public constructor(siteConfig: WebSiteManagementModels.SiteConfig) {
+    public constructor(siteConfig: SiteConfig) {
         super();
         this._siteConfig = siteConfig;
     }
