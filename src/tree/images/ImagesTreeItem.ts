@@ -3,7 +3,7 @@
  *  Licensed under the MIT License. See LICENSE.md in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import { AzExtParentTreeItem, IActionContext } from "vscode-azureextensionui";
+import { IActionContext } from "vscode-azureextensionui";
 import { DockerImage } from "../../docker/Images";
 import { ext } from "../../extensionVariables";
 import { localize } from '../../localize';
@@ -21,14 +21,6 @@ export interface DatedDockerImage extends DockerImage {
 
 export class ImagesTreeItem extends LocalRootTreeItemBase<DatedDockerImage, ImageProperty> {
     private readonly outdatedImageChecker: OutdatedImageChecker = new OutdatedImageChecker();
-
-    public constructor(parent?: AzExtParentTreeItem) {
-        super(parent);
-        this.sortBySettingInfo.properties.push({
-            property: 'Size',
-            description: localize('vscode-docker.tree.images.sortBySize', 'Sort by image size')
-        });
-    }
 
     public treePrefix: string = 'images';
     public label: string = localize('vscode-docker.tree.images.label', 'Images');
@@ -48,8 +40,7 @@ export class ImagesTreeItem extends LocalRootTreeItemBase<DatedDockerImage, Imag
     };
 
     public groupBySettingInfo: ITreeSettingInfo<ImageProperty | CommonGroupBy> = {
-        // No grouping by size
-        properties: [...imageProperties.filter(p => p.property !== 'Size'), groupByNoneProperty],
+        properties: [...imageProperties, groupByNoneProperty],
         defaultProperty: 'Repository',
     };
 

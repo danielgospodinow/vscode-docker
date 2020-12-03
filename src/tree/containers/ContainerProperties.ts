@@ -11,7 +11,7 @@ import { ITreePropertyInfo } from "../settings/ITreeSettingInfo";
 export type ContainerProperty = ImageProperty | 'Compose Project Name' | 'ContainerId' | 'ContainerName' | 'Networks' | 'Ports' | 'State' | 'Status';
 
 export const containerProperties: ITreePropertyInfo<ContainerProperty>[] = [
-    ...imageProperties.filter(p => p.property !== 'Size'), // Don't include size as a container property
+    ...imageProperties,
     { property: 'ContainerId', exampleValue: 'fdeab20e859d' },
     { property: 'ContainerName', exampleValue: 'amazing_hoover' },
     { property: 'Networks', exampleValue: 'mybridge_network' },
