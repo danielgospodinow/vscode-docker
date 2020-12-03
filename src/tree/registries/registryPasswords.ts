@@ -11,18 +11,11 @@ const sessionPasswords: Map<string, string> = new Map<string, string>();
 
 const serviceId: string = 'ms-azuretools.vscode-docker';
 
-// Note: depending on OS configuration and installed components, the keytar module might or might not be able to persist the secrets.
-// If it fails, we just exclusively rely on session password cache.
-// See https://github.com/microsoft/vscode-docker/issues/722 for more information when that might happen.
-
 export async function getRegistryPassword(cached: ICachedRegistryProvider): Promise<string | undefined> {
     const key = getRegistryPasswordKey(cached);
     let password = sessionPasswords.get(key);
     if (!password && ext.keytar) {
-        try {
-            password = await ext.keytar.getPassword(serviceId, key);
-        } catch { }
-
+        password = await ext.keytar.getPassword(serviceId, key);
         if (password) {
             sessionPasswords.set(key, password);
         }
@@ -35,9 +28,7 @@ export async function setRegistryPassword(cached: ICachedRegistryProvider, passw
     const key = getRegistryPasswordKey(cached);
     sessionPasswords.set(key, password);
     if (ext.keytar) {
-        try {
-            await ext.keytar.setPassword(serviceId, key, password);
-        } catch { }
+        await ext.keytar.setPassword(serviceId, key, password);
     }
 }
 
@@ -45,9 +36,7 @@ export async function deleteRegistryPassword(cached: ICachedRegistryProvider): P
     const key = getRegistryPasswordKey(cached);
     sessionPasswords.delete(key);
     if (ext.keytar) {
-        try {
-            await ext.keytar.deletePassword(serviceId, key);
-        } catch { }
+        await ext.keytar.deletePassword(serviceId, key);
     }
 }
 
