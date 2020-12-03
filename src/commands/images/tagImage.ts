@@ -9,6 +9,7 @@ import { ext } from '../../extensionVariables';
 import { localize } from '../../localize';
 import { ImageTreeItem } from '../../tree/images/ImageTreeItem';
 import { RegistryTreeItemBase } from '../../tree/registries/RegistryTreeItemBase';
+import { extractRegExGroups } from '../../utils/extractRegExGroups';
 
 export async function tagImage(context: IActionContext, node?: ImageTreeItem, registry?: RegistryTreeItemBase): Promise<string> {
     if (!node) {
@@ -68,7 +69,7 @@ export function addImageTaggingTelemetry(context: IActionContext, fullImageName:
     try {
         let properties: TelemetryProperties = {};
 
-        let [, repository, tag] = /^(.*):(.*)$/.exec(fullImageName) ?? [undefined, fullImageName, ''];
+        let [repository, tag] = extractRegExGroups(fullImageName, /^(.*):(.*)$/, [fullImageName, '']);
 
         if (!!tag.match(/^[0-9.-]*(|alpha|beta|latest|edge|v|version)?[0-9.-]*$/)) {
             properties.safeTag = tag

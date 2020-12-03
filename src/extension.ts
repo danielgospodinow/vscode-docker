@@ -11,6 +11,7 @@ import * as vscode from 'vscode';
 import { AzureUserInput, callWithTelemetryAndErrorHandling, createAzExtOutputChannel, IActionContext, registerTelemetryHandler, registerUIExtensionVariables, UserCancelledError } from 'vscode-azureextensionui';
 import { ConfigurationParams, DidChangeConfigurationNotification, DocumentSelector, LanguageClient, LanguageClientOptions, Middleware, ServerOptions, TransportKind } from 'vscode-languageclient/lib/main';
 import { registerCommands } from './commands/registerCommands';
+import { LegacyDockerDebugConfigProvider } from './configureWorkspace/LegacyDockerDebugConfigProvider';
 import { COMPOSE_FILE_GLOB_PATTERN } from './constants';
 import { registerDebugConfigurationProvider } from './debugging/coreclr/registerDebugConfigurationProvider';
 import { registerDebugProvider } from './debugging/DebugHelper';
@@ -123,6 +124,12 @@ export async function activateInternal(ctx: vscode.ExtensionContext, perfStats: 
         registerTrees();
         registerCommands();
 
+        ctx.subscriptions.push(
+            vscode.debug.registerDebugConfigurationProvider(
+                'docker-node',
+                new LegacyDockerDebugConfigProvider()
+            )
+        );
         registerDebugConfigurationProvider(ctx);
 
         registerDebugProvider(ctx);

@@ -20,8 +20,5 @@
 		"typescript"
 	],
 	"typescript.tsdk": "node_modules/typescript/lib",
-	"typescript.preferences.importModuleSpecifier": "relative",
-	"files.associations": {
-		"*.template": "plaintext"
-	}
+	"typescript.preferences.importModuleSpecifier": "relative"
 }
