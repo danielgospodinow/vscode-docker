@@ -40,7 +40,6 @@ export interface DockerRunOptions {
     portsPublishAll?: boolean;
     volumes?: DockerContainerVolume[];
     remove?: boolean;
-    customOptions?: string;
 }
 
 export interface DockerRunTaskDefinitionBase extends TaskDefinitionBase {
