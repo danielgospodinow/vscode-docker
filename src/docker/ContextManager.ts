@@ -228,11 +228,7 @@ export class DockerContextManager implements ContextManager, Disposable {
             }
 
             try {
-                if (currentContext.Type === 'aci') {
-                    actionContext.telemetry.properties.hostProtocol = 'aci';
-                } else {
-                    actionContext.telemetry.properties.hostProtocol = new URL(currentContext.DockerEndpoint).protocol;
-                }
+                actionContext.telemetry.properties.hostProtocol = new URL(currentContext.DockerEndpoint).protocol;
             } catch {
                 actionContext.telemetry.properties.hostProtocol = 'unknown';
             }
