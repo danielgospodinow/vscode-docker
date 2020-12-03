@@ -74,7 +74,7 @@ export async function composeRestart(context: IActionContext, dockerComposeFileU
     return await compose(context, ['down', 'up'], localize('vscode-docker.commands.compose.chooseRestart', 'Choose Docker Compose file to restart'), dockerComposeFileUri, selectedComposeFileUris);
 }
 
-export async function rewriteCommandForNewCliIfNeeded(command: string): Promise<string> {
+async function rewriteCommandForNewCliIfNeeded(command: string): Promise<string> {
     if ((await ext.dockerContextManager.getCurrentContext()).Type === 'aci') {
         // Replace 'docker-compose ' at the start of a string with 'docker compose ', and '--build' anywhere with ''
         return command.replace(/^docker-compose /, 'docker compose ').replace(/--build/, '');
