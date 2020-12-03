@@ -33,9 +33,9 @@ export async function spawnAsync(
         options = options || {};
         options.shell = true;
 
-        const subprocess = cp.spawn(command, options);
+        const process = cp.spawn(command, options);
 
-        subprocess.on('error', (err) => {
+        process.on('error', (err) => {
             if (cancellationListener) {
                 cancellationListener.dispose();
                 cancellationListener = undefined;
@@ -44,7 +44,7 @@ export async function spawnAsync(
             return reject(err);
         });
 
-        subprocess.on('close', (code, signal) => {
+        process.on('close', (code, signal) => {
             if (cancellationListener) {
                 cancellationListener.dispose();
                 cancellationListener = undefined;
@@ -73,16 +73,16 @@ export async function spawnAsync(
         });
 
         if (options?.stdin) {
-            subprocess.stdin.write(options.stdin);
-            subprocess.stdin.end();
+            process.stdin.write(options.stdin);
+            process.stdin.end();
         }
 
         if (onStdout || stdoutBuffer) {
-            subprocess.stdout.on('data', (chunk: Buffer) => {
+            process.stdout.on('data', (chunk: Buffer) => {
                 const data = chunk.toString();
 
                 if (onStdout) {
-                    onStdout(data, subprocess);
+                    onStdout(data, process);
                 }
 
                 if (stdoutBuffer) {
@@ -92,11 +92,11 @@ export async function spawnAsync(
         }
 
         if (onStderr || stderrBuffer) {
-            subprocess.stderr.on('data', (chunk: Buffer) => {
+            process.stderr.on('data', (chunk: Buffer) => {
                 const data = chunk.toString();
 
                 if (onStderr) {
-                    onStderr(data, subprocess);
+                    onStderr(data, process);
                 }
 
                 if (stderrBuffer) {
@@ -107,7 +107,7 @@ export async function spawnAsync(
 
         if (token) {
             cancellationListener = token.onCancellationRequested(() => {
-                subprocess.kill();
+                process.kill();
             });
         }
     });
