@@ -12,8 +12,7 @@ export async function inspectDockerContext(actionContext: IActionContext, node?:
     if (!node) {
         node = await ext.contextsTree.showTreeItemPicker<ContextTreeItem>(ContextTreeItem.allContextRegExp, {
             ...actionContext,
-            noItemFoundErrorMessage: localize('vscode-docker.commands.contexts.inspect.noContexts', 'No Docker contexts are available to inspect'),
-            suppressCreatePick: true,
+            noItemFoundErrorMessage: localize('vscode-docker.commands.contexts.inspect.noContexts', 'No Docker contexts are available to inspect')
         });
     }
 

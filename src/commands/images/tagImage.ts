@@ -67,6 +67,7 @@ const KnownRegistries: { type: string, regex: RegExp }[] = [
 
 export function addImageTaggingTelemetry(context: IActionContext, fullImageName: string, propertyPostfix: '.before' | '.after' | ''): void {
     try {
+        let defaultRegistryPath: string = vscode.workspace.getConfiguration('docker').get('defaultRegistryPath', '');
         let properties: TelemetryProperties = {};
 
         let [repository, tag] = extractRegExGroups(fullImageName, /^(.*):(.*)$/, [fullImageName, '']);
@@ -76,6 +77,8 @@ export function addImageTaggingTelemetry(context: IActionContext, fullImageName:
         }
         properties.hasTag = String(!!tag);
         properties.numSlashes = String(numberMatches(repository.match(/\//g)));
+        properties.isDefaultRegistryPathInName = String(repository.startsWith(`${defaultRegistryPath}/`));
+        properties.isDefaultRegistryPathSet = String(!!defaultRegistryPath);
 
         let knownRegistry = KnownRegistries.find(kr => !!repository.match(kr.regex));
         if (knownRegistry) {

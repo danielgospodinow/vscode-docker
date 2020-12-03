@@ -56,10 +56,6 @@ export class ContainerTreeItem extends AzExtTreeItem {
         return this._item.Ports;
     }
 
-    public get containerItem(): DockerContainer {
-        return this._item;
-    }
-
     /**
      * @deprecated This is only kept for backwards compatability with the "Remote Containers" extension
      * They add a context menu item "Attach Visual Studio Code" to our container nodes that relies on containerDesc

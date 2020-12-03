@@ -13,8 +13,7 @@ export async function removeDockerContext(actionContext: IActionContext, node?: 
     if (!node) {
         node = await ext.contextsTree.showTreeItemPicker<ContextTreeItem>(ContextTreeItem.removableContextRegExp, {
             ...actionContext,
-            noItemFoundErrorMessage: localize('vscode-docker.commands.contexts.remove.noContexts', 'No Docker contexts are available to remove'),
-            suppressCreatePick: true,
+            noItemFoundErrorMessage: localize('vscode-docker.commands.contexts.remove.noContexts', 'No Docker contexts are available to remove')
         });
     }
 

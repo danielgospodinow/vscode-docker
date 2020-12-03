@@ -10,8 +10,8 @@ import { getThemedIconPath, IconPath } from '../IconPath';
 import { getTreeId } from "../LocalRootTreeItemBase";
 
 export class ContextTreeItem extends AzExtTreeItem {
-    public static allContextRegExp: RegExp = /Context;/;
-    public static removableContextRegExp: RegExp = /^customContext;/i;
+    public static allContextRegExp: RegExp = /Context$/;
+    public static removableContextRegExp: RegExp = /^customContext$/i;
 
     private readonly _item: DockerContext;
 
@@ -21,21 +21,13 @@ export class ContextTreeItem extends AzExtTreeItem {
     }
 
     public get contextValue(): string {
-        let result: string;
-
         if (this.name === 'default') {
-            result = 'defaultContext;';
+            return 'defaultContext';
         } else if (this.current) {
-            result = 'currentCustomContext;';
-        } else {
-            result = 'customContext;';
+            return 'currentCustomContext';
         }
 
-        if (this._item.Type === 'aci') {
-            result += 'aciContext;';
-        }
-
-        return result;
+        return 'customContext';
     }
 
     public get createdTime(): number {

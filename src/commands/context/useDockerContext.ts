@@ -15,8 +15,7 @@ export async function useDockerContext(actionContext: IActionContext, node?: Con
     if (!node) {
         node = await ext.contextsTree.showTreeItemPicker<ContextTreeItem>(ContextTreeItem.allContextRegExp, {
             ...actionContext,
-            noItemFoundErrorMessage: localize('vscode-docker.commands.contexts.use.noContexts', 'No Docker contexts are available to use'),
-            suppressCreatePick: !(await ext.dockerContextManager.isNewCli()),
+            noItemFoundErrorMessage: localize('vscode-docker.commands.contexts.use.noContexts', 'No Docker contexts are available to use')
         });
         invokedFromCommandPalette = true;
     }
