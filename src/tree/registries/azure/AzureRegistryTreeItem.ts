@@ -8,7 +8,7 @@ import { URL } from "url";
 import { AzExtTreeItem, createAzureClient, IActionContext } from "vscode-azureextensionui";
 import { getResourceGroupFromId } from "../../../utils/azureUtils";
 import { nonNullProp } from "../../../utils/nonNull";
-import { getIconPath } from "../../IconPath";
+import { getIconPath, IconPath } from "../../IconPath";
 import { azureOAuthProvider, IAzureOAuthContext } from "../auth/AzureOAuthProvider";
 import { DockerV2RegistryTreeItemBase } from "../dockerV2/DockerV2RegistryTreeItemBase";
 import { ICachedRegistryProvider } from "../ICachedRegistryProvider";
@@ -32,9 +32,6 @@ export class AzureRegistryTreeItem extends DockerV2RegistryTreeItemBase {
             subscriptionContext: this.parent.root,
             scope: 'registry:catalog:*',
         }
-
-        this.id = this.registryId;
-        this.iconPath = getIconPath('azureRegistry');
     }
 
     public get registryName(): string {
@@ -61,8 +58,16 @@ export class AzureRegistryTreeItem extends DockerV2RegistryTreeItemBase {
         return this.registryName;
     }
 
+    public get id(): string {
+        return this.registryId;
+    }
+
     public get properties(): unknown {
         return this._registry;
+    }
+
+    public get iconPath(): IconPath {
+        return getIconPath('azureRegistry');
     }
 
     public get baseUrl(): string {

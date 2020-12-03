@@ -6,7 +6,7 @@
 import { ContainerRegistryManagementModels as AcrModels } from "@azure/arm-containerregistry";
 import { AzExtParentTreeItem, AzExtTreeItem, IActionContext } from "vscode-azureextensionui";
 import { localize } from '../../../localize';
-import { getThemedIconPath } from "../../IconPath";
+import { getThemedIconPath, IconPath } from "../../IconPath";
 import { OpenUrlTreeItem } from "../../OpenUrlTreeItem";
 import { AzureRegistryTreeItem } from "./AzureRegistryTreeItem";
 import { AzureTaskTreeItem } from "./AzureTaskTreeItem";
@@ -22,7 +22,10 @@ export class AzureTasksTreeItem extends AzExtParentTreeItem {
 
     public constructor(parent: AzureRegistryTreeItem) {
         super(parent);
-        this.iconPath = getThemedIconPath('tasks');
+    }
+
+    public get iconPath(): IconPath {
+        return getThemedIconPath('tasks');
     }
 
     public async loadMoreChildrenImpl(clearCache: boolean, _context: IActionContext): Promise<AzExtTreeItem[]> {

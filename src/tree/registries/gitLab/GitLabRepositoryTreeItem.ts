@@ -12,7 +12,7 @@ import { GitLabProjectTreeItem } from "./GitLabProjectTreeItem";
 
 export class GitLabRepositoryTreeItem extends RemoteRepositoryTreeItemBase {
     public parent: GitLabProjectTreeItem;
-    public readonly repoId: string;
+    public repoId: string;
 
     private _nextLink?: string;
 
@@ -21,7 +21,10 @@ export class GitLabRepositoryTreeItem extends RemoteRepositoryTreeItemBase {
         // if the project's namespace is the same as the repository
         super(parent, name || parent.label);
         this.repoId = id;
-        this.id = this.repoId;
+    }
+
+    public get id(): string {
+        return this.repoId;
     }
 
     public async loadMoreChildrenImpl(clearCache: boolean, _context: IActionContext): Promise<AzExtTreeItem[]> {

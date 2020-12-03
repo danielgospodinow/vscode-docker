@@ -207,8 +207,12 @@ module.exports = {
         ],
         "no-return-await": "off",
         "no-sequences": "error",
-        "no-shadow": "off",
-        "@typescript-eslint/no-shadow": ["error"],
+        "no-shadow": [
+            "error",
+            {
+                "hoist": "all"
+            }
+        ],
         "no-sparse-arrays": "error",
         "no-template-curly-in-string": "error",
         "no-throw-literal": "error",

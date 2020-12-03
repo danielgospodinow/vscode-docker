@@ -6,7 +6,7 @@
 import { RequestPromiseOptions } from "request-promise-native";
 import { AzExtParentTreeItem, AzExtTreeItem } from "vscode-azureextensionui";
 import { IRepositoryAuthTreeItem } from "../../utils/registryRequestUtils";
-import { getThemedIconPath } from "../IconPath";
+import { getThemedIconPath, IconPath } from "../IconPath";
 import { getRegistryContextValue, repositorySuffix } from "./registryContextValues";
 import { RegistryTreeItemBase } from "./RegistryTreeItemBase";
 import { RemoteTagTreeItem } from "./RemoteTagTreeItem";
@@ -22,7 +22,6 @@ export abstract class RemoteRepositoryTreeItemBase extends AzExtParentTreeItem i
     public constructor(parent: RegistryTreeItemBase, repoName: string) {
         super(parent);
         this.repoName = repoName;
-        this.iconPath = getThemedIconPath('repository');
     }
 
     public get label(): string {
@@ -31,6 +30,10 @@ export abstract class RemoteRepositoryTreeItemBase extends AzExtParentTreeItem i
 
     public get contextValue(): string {
         return getRegistryContextValue(this, repositorySuffix);
+    }
+
+    public get iconPath(): IconPath {
+        return getThemedIconPath('repository');
     }
 
     /**
