@@ -29,7 +29,6 @@ export function getContainerStateIcon(state: string): IconPath {
         case 'exited':
         case 'removing':
         case 'terminated':
-        case 'unknown':
         case 'waiting':
             icon = 'statusStop';
             break;
