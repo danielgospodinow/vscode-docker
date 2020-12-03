@@ -30,7 +30,6 @@
 				"--extensionDevelopmentPath=${workspaceFolder}"
 			],
 			"env": {
-				"AZCODE_DOCKER_IGNORE_BUNDLE": "",
 				"DEBUGTELEMETRY": "1"
 			},
 			"stopOnEntry": false,
@@ -38,7 +37,7 @@
 			"outFiles": [
 				"${workspaceFolder}/out/**/*.js"
 			],
-			"preLaunchTask": "npm: webpack-prod"
+			"preLaunchTask": "npm: webpack"
 		},
 		{
 			"name": "Launch Tests",
@@ -48,7 +47,7 @@
 			"args": [
 				"${workspaceFolder}/test/test.code-workspace",
 				"--extensionDevelopmentPath=${workspaceFolder}",
-				"--extensionTestsPath=${workspaceFolder}/out/test/index"
+				"--extensionTestsPath=${workspaceFolder}/out/test"
 			],
 			"stopOnEntry": false,
 			"sourceMaps": true,
@@ -59,6 +58,9 @@
 			"env": {
 				"AZCODE_DOCKER_IGNORE_BUNDLE": "1",
 				"MOCHA_grep": "", // RegExp of tests to run (empty means all)
+				"MOCHA_enableTimeouts": "0", // Disable time-outs
+				"DEBUGTELEMETRY": "1",
+				"NODE_DEBUG": ""
 			}
 		},
 		{
@@ -69,7 +71,7 @@
 			"args": [
 				"${workspaceFolder}/test/test.code-workspace",
 				"--extensionDevelopmentPath=${workspaceFolder}",
-				"--extensionTestsPath=${workspaceFolder}/out/test/index"
+				"--extensionTestsPath=${workspaceFolder}/out/test"
 			],
 			"stopOnEntry": false,
 			"sourceMaps": true,
@@ -80,6 +82,9 @@
 			"env": {
 				"AZCODE_DOCKER_IGNORE_BUNDLE": "1",
 				"MOCHA_grep": "\\(unit\\)", // RegExp of tests to run (empty means all)
+				"MOCHA_enableTimeouts": "0", // Disable time-outs
+				"DEBUGTELEMETRY": "1",
+				"NODE_DEBUG": ""
 			}
 		},
 		{
@@ -90,17 +95,19 @@
 			"args": [
 				"${workspaceFolder}/test/test.code-workspace",
 				"--extensionDevelopmentPath=${workspaceFolder}",
-				"--extensionTestsPath=${workspaceFolder}/dist/test/index"
+				"--extensionTestsPath=${workspaceFolder}/dist/test"
 			],
 			"stopOnEntry": false,
 			"sourceMaps": true,
 			"outFiles": [
 				"${workspaceFolder}/dist/**/*.js"
 			],
-			"preLaunchTask": "npm: webpack-prod",
+			"preLaunchTask": "npm: webpack",
 			"env": {
-				"AZCODE_DOCKER_IGNORE_BUNDLE": "",
 				"MOCHA_grep": "", // RegExp of tests to run (empty means all)
+				"MOCHA_enableTimeouts": "0", // Disable time-outs
+				"DEBUGTELEMETRY": "1",
+				"NODE_DEBUG": ""
 			}
 		}
 	]
